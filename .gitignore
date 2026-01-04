@@ -1,0 +1,63 @@
+# ===========================
+# 虚幻引擎核心垃圾
+# ===========================
+Binaries/
+Build/
+DerivedDataCache/
+Intermediate/
+Saved/
+Script/
+
+# ===========================
+# IDE 生成的项目文件
+# ===========================
+# Visual Studio
+.vs/
+FileOpenOrder/
+*.sln
+*.suo
+*.opensdf
+*.sdf
+*.user
+*.opendb
+*.vc.db
+*.vcxproj
+*.vcxproj.filters
+
+# Rider 
+.idea/
+*.sln.DotSettings.user
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# ===========================
+# 编译产生的临时文件
+# ===========================
+# 调试符号
+*.pdb
+*-Debug.*
+
+# 编译中间件
+obj/
+*.obj
+*.pch
+
+# ===========================
+# 操作系统垃圾
+# ===========================
+.DS_Store
+Thumbs.db
+
+# ===========================
+# 日志与临时备份
+# ===========================
+*.log
+*.tmp
+*.bak
+
+# ===========================
+# 笔记文件
+# ===========================
+Note/
