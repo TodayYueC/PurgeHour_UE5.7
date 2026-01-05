@@ -7,7 +7,10 @@
 		{
 			"Name": "PurgeHour",
 			"Type": "Runtime",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine"
+			]
 		}
 	],
 	"Plugins": [
@@ -17,6 +20,26 @@
 			"TargetAllowList": [
 				"Editor"
 			]
+		},
+		{
+			"Name": "AutoSizeComments",
+			"Enabled": true,
+			"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/content/ae89a2c4ab384de0a3f213b23de324f3"
+		},
+		{
+			"Name": "CrystalNodes",
+			"Enabled": true,
+			"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/product/795d430fe08640bcb9f3f52c996a62a0"
+		},
+		{
+			"Name": "NodeGraphAssistant",
+			"Enabled": true,
+			"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/content/d9baaaeadeaf41dcb52b3f6e134e9514"
+		},
+		{
+			"Name": "SwitchLanguage",
+			"Enabled": true,
+			"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/product/f6a1236f673345299f7fb888da78a2ba"
 		}
 	]
 }
