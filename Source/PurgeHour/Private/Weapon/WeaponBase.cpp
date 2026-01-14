@@ -2,10 +2,14 @@
 
 
 #include "Weapon/WeaponBase.h"
+
 #include "Components/SphereComponent.h"
 #include "Data/WeaponData.h"
 #include "Characters/Hero/Hero.h"
 #include "Engine/Engine.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundCue.h"
+#include "Subsystem/DelegatesSubsystem.h"
 
 // Sets default values
 AWeaponBase::AWeaponBase()
@@ -41,6 +45,17 @@ void AWeaponBase::OnPickupBeginOverlap(UPrimitiveComponent* OverlappedComp, AAct
 		if (WeaponOwner){
 			//先直接捡，以后改进背包系统
 			WeaponOwner->PickUpWeapon(this);
+
+			// 触发UI更新
+			if (UGameInstance* GI = GetGameInstance())
+			{
+				if (UDelegatesSubsystem* DelegatesSubsystem = GI->GetSubsystem<UDelegatesSubsystem>())
+				{
+					DelegatesSubsystem->WeaponNameChangedDelegate.ExecuteIfBound(WeaponDataAsset->WeaponDisplayName);
+					
+				}
+			}
+
 			WeaponMesh->DestroyComponent();
 			PickupCollision->DestroyComponent();
 		}
@@ -56,7 +71,6 @@ void AWeaponBase::OnConstruction(const FTransform& Transform)
 		WeaponSkeletalMesh->SetSkeletalMesh(WeaponDataAsset->SkeletalMesh);
 		WeaponMesh->SetStaticMesh(WeaponDataAsset->StaticMesh);
 	}
-	
 }
 
 // Called every frame
@@ -71,6 +85,7 @@ void AWeaponBase::Fire()
 	if (WeaponDataAsset)
 	{
 		GetWorldTimerManager().SetTimer(ShootTimerHandle, this, &AWeaponBase::ShootTime, WeaponDataAsset->AttackSpeed, true, 0.0f);
+
 	}
 }
 
@@ -82,6 +97,24 @@ void AWeaponBase::StopFire()
 void AWeaponBase::ShootTime()
 {
 	//先用debug代替，以后写逻辑
-	GEngine->AddOnScreenDebugMessage(-1, 0.5f, FColor::Red, TEXT("Shoot") );
-}
+	//GEngine->AddOnScreenDebugMessage(-1, 0.5f, FColor::Red, TEXT("Shoot") );
+	
+	if (WeaponOwner && WeaponOwner->FireMontage)
+	{
+		WeaponOwner->PlayAnimMontage(WeaponOwner->FireMontage, 1.0f);
+	}
 
+	if (WeaponDataAsset)
+	{
+		//播放开火动画
+		if (WeaponSkeletalMesh && WeaponDataAsset->FireAnimation)
+		{
+			WeaponSkeletalMesh->PlayAnimation(WeaponDataAsset->FireAnimation, false);
+		}
+		
+		if (WeaponDataAsset->FireSound)
+		{
+			UGameplayStatics::PlaySound2D(GetWorld(), WeaponDataAsset->FireSound);
+		}
+	}
+}

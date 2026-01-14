@@ -22,7 +22,7 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-	
+	// 组件
 	UPROPERTY(VisibleAnywhere,Category = "Weapon")
 	TObjectPtr<USceneComponent> Root;
 	
@@ -35,12 +35,14 @@ protected:
 	UPROPERTY(VisibleAnywhere,Category = "Weapon")
 	TObjectPtr<USphereComponent> PickupCollision;
 	
+	// 数据
 	UPROPERTY(EditDefaultsOnly,Category = "Weapon")
 	TObjectPtr<UWeaponData> WeaponDataAsset;
-	
+	// 拾取者
 	UPROPERTY(BlueprintReadOnly,Category = "Weapon")
 	TObjectPtr<AHero> WeaponOwner;
 
+	
 	UFUNCTION()
 	void OnPickupBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 	

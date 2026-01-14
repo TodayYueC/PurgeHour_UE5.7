@@ -17,6 +17,9 @@ public:
 	//武器名称
 	UPROPERTY(EditDefaultsOnly,Category="Weapon")
 	FName WeaponName;
+	
+	UPROPERTY(EditDefaultsOnly,Category="Weapon")
+	FText WeaponDisplayName;
 	//武器静态网格体
 	UPROPERTY(EditDefaultsOnly,Category="Weapon")
 	TObjectPtr<UStaticMesh> StaticMesh;

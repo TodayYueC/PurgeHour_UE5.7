@@ -11,6 +11,7 @@ class UWeaponData;
 class USpringArmComponent;
 class UCameraComponent;
 
+
 /**
  * 
  */
@@ -21,6 +22,9 @@ class PURGEHOUR_API AHero : public ACharacterBase
 public:
 	AHero();
 	
+	//动画
+	UPROPERTY(EditDefaultsOnly,Category="Anim")
+	TObjectPtr<UAnimMontage> FireMontage;
 protected:
 	virtual void BeginPlay() override;
 	
@@ -32,22 +36,27 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	UCameraComponent* CameraComponent;
 	
+	//当前持有武器
 	UPROPERTY()
 	AWeaponBase* CurrentWeapon;
 	
+	//当前状态
 	UPROPERTY(BlueprintReadOnly, Category = "Camera")
 	EHeroState CurrentHeroState;
 	
+
+	
 public:
 	virtual void Tick(float DeltaTime) override;
-	
+	//捡起武器相关
 	void PickUpWeapon(AWeaponBase* NewWeapon);
-	
+	//状态相关
 	UFUNCTION(BlueprintCallable, Category = "Hero")
 	FORCEINLINE void SetCurrentHeroState(EHeroState NewState) { CurrentHeroState = NewState; }
 	UFUNCTION(BlueprintCallable, Category = "Hero")
 	FORCEINLINE EHeroState GetCurrentHeroState() { return CurrentHeroState; }
 	
+	//开火与停止开火相关
 	void Fire();
 	void StopFire();
 	UFUNCTION(BlueprintImplementableEvent,Category = "Hero")	
