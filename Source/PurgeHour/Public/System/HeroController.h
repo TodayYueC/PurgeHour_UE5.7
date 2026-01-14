@@ -26,14 +26,22 @@ public:
 	UInputAction* HeroLook;
 	UPROPERTY(EditDefaultsOnly,Category="Input")
 	UInputAction* HeroJump;
+	UPROPERTY(EditDefaultsOnly,Category="Input")
+	UInputAction* HeroFire;
+	UPROPERTY(EditDefaultsOnly,Category="Input")
+	UInputAction* HeroFocusAim;
 
 protected:
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
 	
-	void Move(const FInputActionValue& Value);
+	void Move(const FInputActionValue& Value) ;
 	void Look(const FInputActionValue& Value);
-	void Jump();
-	void JumpEnd();
+	void Jump() ;
+	void JumpEnd() ;
+	void Fire() ;
+	void StopFire () ;
+	void FocusAimOpen () ;
+	void FocusAimClose () ;
 	
 };

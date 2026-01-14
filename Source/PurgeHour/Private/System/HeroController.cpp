@@ -32,10 +32,20 @@ void AHeroController::SetupInputComponent()
 			EnhancedInputComponent->BindAction(HeroJump, ETriggerEvent::Started, this, &AHeroController::Jump);
 			EnhancedInputComponent->BindAction(HeroJump, ETriggerEvent::Completed, this, &AHeroController::JumpEnd);
 		}
+		if (HeroFire)
+		{
+			EnhancedInputComponent->BindAction(HeroFire, ETriggerEvent::Started, this, &AHeroController::Fire);
+			EnhancedInputComponent->BindAction(HeroFire, ETriggerEvent::Completed, this, &AHeroController::StopFire);
+		}
+		if (HeroFocusAim)
+		{
+			EnhancedInputComponent->BindAction(HeroFocusAim, ETriggerEvent::Started, this, &AHeroController::FocusAimOpen);
+			EnhancedInputComponent->BindAction(HeroFocusAim, ETriggerEvent::Completed, this, &AHeroController::FocusAimClose);
+		}
 	}
 }
 
-void AHeroController::Move(const FInputActionValue& Value)
+void AHeroController::Move (const FInputActionValue& Value) 
 {
 	FVector2D MoveVector = Value.Get<FVector2D>();
 	if (ACharacter* ControlledPawn = GetCharacter())
@@ -48,7 +58,7 @@ void AHeroController::Move(const FInputActionValue& Value)
 	}
 }
 
-void AHeroController::Look(const FInputActionValue& Value)
+void AHeroController::Look(const FInputActionValue& Value) 
 {
 	FVector2D LookVector = Value.Get<FVector2D>();
 	if (GetCharacter()){
@@ -57,15 +67,52 @@ void AHeroController::Look(const FInputActionValue& Value)
 	}
 }
 
-void AHeroController::Jump()
+void AHeroController::Jump() 
 {
 	if (GetCharacter())
 		GetCharacter()->Jump();
 	
 }
 
-void AHeroController::JumpEnd()
+void AHeroController::JumpEnd() 
 {
 	if (GetCharacter())
 		GetCharacter()->StopJumping();
+}
+
+void AHeroController::Fire()
+{
+	AHero* HeroCharacter = GetPawn<AHero>();
+	if (IsValid(HeroCharacter))
+	{
+		HeroCharacter->Fire();
+	}
+}
+
+void AHeroController::StopFire()
+{
+	AHero* HeroCharacter = GetPawn<AHero>();
+	if (IsValid(HeroCharacter))
+	{
+		HeroCharacter->StopFire();
+	}
+}
+
+
+void AHeroController::FocusAimOpen()
+{
+	AHero* HeroCharacter = GetPawn<AHero>();
+	if (IsValid(HeroCharacter) && HeroCharacter->GetCurrentHeroState() == EHeroState::HoldingWeapon)
+	{
+		HeroCharacter->AimFocusOpen();
+	}
+}
+
+void AHeroController::FocusAimClose()
+{
+	AHero* HeroCharacter = GetPawn<AHero>();
+	if (IsValid(HeroCharacter) && HeroCharacter->GetCurrentHeroState() == EHeroState::HoldingWeapon)
+	{
+		HeroCharacter->AimFocusClose();
+	}
 }

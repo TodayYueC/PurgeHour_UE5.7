@@ -61,3 +61,10 @@ Thumbs.db
 # 笔记文件
 # ===========================
 Note/
+
+# ===========================
+# 大型资源文件
+# ===========================
+Content/FPSGameAsset/
+Content/RifleAnimsetPro/
+Content/ShellParticle/

@@ -4,9 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "Characters/CharacterBase.h"
+#include "PureData/HeroState.h"
 #include "Hero.generated.h"
+class AWeaponBase;
+class UWeaponData;
 class USpringArmComponent;
 class UCameraComponent;
+
 /**
  * 
  */
@@ -28,7 +32,26 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	UCameraComponent* CameraComponent;
 	
+	UPROPERTY()
+	AWeaponBase* CurrentWeapon;
+	
+	UPROPERTY(BlueprintReadOnly, Category = "Camera")
+	EHeroState CurrentHeroState;
+	
 public:
 	virtual void Tick(float DeltaTime) override;
 	
+	void PickUpWeapon(AWeaponBase* NewWeapon);
+	
+	UFUNCTION(BlueprintCallable, Category = "Hero")
+	FORCEINLINE void SetCurrentHeroState(EHeroState NewState) { CurrentHeroState = NewState; }
+	UFUNCTION(BlueprintCallable, Category = "Hero")
+	FORCEINLINE EHeroState GetCurrentHeroState() { return CurrentHeroState; }
+	
+	void Fire();
+	void StopFire();
+	UFUNCTION(BlueprintImplementableEvent,Category = "Hero")	
+	void AimFocusOpen();
+	UFUNCTION(BlueprintImplementableEvent,Category = "Hero")
+	void AimFocusClose();
 };
