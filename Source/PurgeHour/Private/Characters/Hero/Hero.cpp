@@ -6,6 +6,8 @@
 #include "Camera/CameraComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundCue.h"
 #include "Weapon/WeaponBase.h"
 
 AHero::AHero()
@@ -62,6 +64,10 @@ void AHero::Fire()
 {
 	if (CurrentHeroState == EHeroState::HoldingWeapon && CurrentWeapon)
 	{
+		if (CurrentWeapon->GetCurrentBulletNum()<=0)
+		{
+			UGameplayStatics::PlaySound2D(GetWorld(), EmptyMagazineSound);
+		}
 		CurrentWeapon->Fire();
 	}
 }
@@ -72,6 +78,16 @@ void AHero::StopFire()
 	{
 		CurrentWeapon->StopFire();
 	}
+}
+
+void AHero::AddPitchOffset(float PitchOffsetAmount)
+{
+	AddControllerPitchInput(PitchOffsetAmount);
+}
+
+void AHero::AddYawOffset(float YawOffsetAmount)
+{
+	AddControllerYawInput(YawOffsetAmount);
 }
 
 

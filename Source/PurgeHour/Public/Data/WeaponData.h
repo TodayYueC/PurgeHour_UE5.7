@@ -59,6 +59,10 @@ public:
 	//后坐力水平偏移
 	UPROPERTY(EditDefaultsOnly,Category="Weapon")
 	float RecoilYawOffset;
+	//最大后座力偏移次数
+	UPROPERTY(EditDefaultsOnly,Category="Weapon")
+	int32 RecoilMaxCount;
+	
 	//武器描述
 	UPROPERTY(EditDefaultsOnly,Category="Weapon")
 	FText WeaponDescription;

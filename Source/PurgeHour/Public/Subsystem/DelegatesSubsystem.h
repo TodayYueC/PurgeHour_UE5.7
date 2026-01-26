@@ -6,7 +6,9 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "DelegatesSubsystem.generated.h"
 
-DECLARE_DELEGATE_OneParam(FWeaponNameChangedDelegate, const FText&)
+DECLARE_MULTICAST_DELEGATE_OneParam(FWeaponNameChangedDelegate, const FText&)
+DECLARE_MULTICAST_DELEGATE_OneParam(FCurrentBulletNumChangedDelegate, int32);
+DECLARE_MULTICAST_DELEGATE_OneParam(FAllBulletNumChangedDelegate, int32);
 /**
  * 
  */
@@ -16,4 +18,6 @@ class PURGEHOUR_API UDelegatesSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 public:
 	FWeaponNameChangedDelegate WeaponNameChangedDelegate;
+	FCurrentBulletNumChangedDelegate CurrentBulletNumChangedDelegate;
+	FAllBulletNumChangedDelegate AllBulletNumChangedDelegate;
 };

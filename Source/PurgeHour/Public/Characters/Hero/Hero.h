@@ -44,7 +44,9 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Camera")
 	EHeroState CurrentHeroState;
 	
-
+	//空弹夹音效
+	UPROPERTY(EditDefaultsOnly,Category="Sound")
+	TObjectPtr<USoundCue> EmptyMagazineSound;
 	
 public:
 	virtual void Tick(float DeltaTime) override;
@@ -56,11 +58,19 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Hero")
 	FORCEINLINE EHeroState GetCurrentHeroState() { return CurrentHeroState; }
 	
-	//开火与停止开火相关
+	//开火相关
 	void Fire();
 	void StopFire();
 	UFUNCTION(BlueprintImplementableEvent,Category = "Hero")	
 	void AimFocusOpen();
 	UFUNCTION(BlueprintImplementableEvent,Category = "Hero")
 	void AimFocusClose();
+	
+	//后坐力
+	void AddPitchOffset(float PitchOffsetAmount);
+	void AddYawOffset(float YawOffsetAmount);
+	
+	//获取当前武器
+	UFUNCTION(BlueprintCallable,BlueprintPure,Category="Hero")
+	FORCEINLINE AWeaponBase* GetCurrentWeapon() { return CurrentWeapon; }
 };

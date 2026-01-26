@@ -38,10 +38,60 @@ protected:
 	// 数据
 	UPROPERTY(EditDefaultsOnly,Category = "Weapon")
 	TObjectPtr<UWeaponData> WeaponDataAsset;
+	
+	int32 CurrentBulletNum;
+	
+	int32 AllBulletNum;
+	
+	int32 OffsetNum;
+	float PendingRecoilPitch = 0.0f;
+	float PendingRecoilYaw = 0.0f;
+	
+	UPROPERTY(BlueprintReadOnly,Category="Offset")
+	float PitchOffset;
+	
+	UPROPERTY(BlueprintReadOnly,Category="Offset")
+	float YawOffset;
+	
 	// 拾取者
 	UPROPERTY(BlueprintReadOnly,Category = "Weapon")
 	TObjectPtr<AHero> WeaponOwner;
-
+	
+	//击中粒子特效
+	UPROPERTY(EditDefaultsOnly,Category="ParticleSystem")
+	TObjectPtr<UParticleSystem> DirtEffect;
+	
+	UPROPERTY(EditDefaultsOnly,Category="ParticleSystem")
+	TObjectPtr<UParticleSystem> GrassEffect;
+	
+	UPROPERTY(EditDefaultsOnly,Category="ParticleSystem")
+	TObjectPtr<UParticleSystem> RockEffect;
+	
+	UPROPERTY(EditDefaultsOnly,Category="ParticleSystem")
+	TObjectPtr<UParticleSystem> MetalEffect;
+	
+	UPROPERTY(EditDefaultsOnly,Category="ParticleSystem")
+	TObjectPtr<UParticleSystem> WoodEffect;
+	
+	//击中音效
+	UPROPERTY(EditDefaultsOnly,Category="Sound")
+	TObjectPtr<USoundCue> DirtSound;
+	
+	UPROPERTY(EditDefaultsOnly,Category="Sound")
+	TObjectPtr<USoundCue> GrassSound;
+	
+	UPROPERTY(EditDefaultsOnly,Category="Sound")
+	TObjectPtr<USoundCue> RockSound;
+	
+	UPROPERTY(EditDefaultsOnly,Category="Sound")
+	TObjectPtr<USoundCue> MetalSound;
+	
+	UPROPERTY(EditDefaultsOnly,Category="Sound")
+	TObjectPtr<USoundCue> WoodSound;
+	
+	//弹孔贴花
+	UPROPERTY(EditDefaultsOnly,Category="Decal")
+	TObjectPtr<UMaterialInterface> BulletDecalMaterial;
 	
 	UFUNCTION()
 	void OnPickupBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
@@ -49,6 +99,9 @@ protected:
 	virtual void OnConstruction(const FTransform& Transform) override;
 	
 	FTimerHandle ShootTimerHandle;
+	
+	//初始化数据
+	void InitWeaponData();
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -56,7 +109,15 @@ public:
 	UFUNCTION(BlueprintCallable,Category="Weapon")
 	FORCEINLINE UWeaponData* GetWeaponDataAsset() const { return WeaponDataAsset; }
 	
+	UFUNCTION(BlueprintCallable,Category="Bullet")
+	FORCEINLINE int32 GetCurrentBulletNum() const { return CurrentBulletNum; }
+	
+	UFUNCTION(BlueprintCallable,Category="Bullet")
+	FORCEINLINE int32 GetAllBulletNum() const { return AllBulletNum; }
+	
 	void Fire();
 	void StopFire();
 	void ShootTime();
+	
+	void InitBulletNumUI();
 };

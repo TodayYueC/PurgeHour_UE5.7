@@ -32,3 +32,27 @@ void ACharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 
 }
 
+bool ACharacterBase::UniDoLineTrace(const FVector& StartLocation,const FRotator& StartRotation,float TraceDistance,FHitResult& HitResult,bool bDraw)
+{
+	//射线检测
+	FVector EndLocation = StartLocation + StartRotation.Vector() * TraceDistance;
+	FCollisionQueryParams TraceParams(FName(TEXT("LineTrace")), true, this);
+	TraceParams.bReturnPhysicalMaterial = true;
+	bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult, StartLocation, EndLocation, ECC_Visibility, TraceParams);
+	
+	//Debug用
+	if (bDraw)
+	{
+		if (bHit)
+		{
+			DrawDebugLine(GetWorld(), StartLocation, HitResult.Location, FColor::Green, false, 1.0f, 0, 0.08f);
+			DrawDebugSphere(GetWorld(), HitResult.Location, 5.0f, 12, FColor::Red, false, 1.0f);
+		}
+		else
+		{
+			DrawDebugLine(GetWorld(), StartLocation, EndLocation, FColor::Yellow, false, 1.0f, 0, 0.08f);
+		}
+	}
+	return bHit;
+}
+

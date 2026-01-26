@@ -22,5 +22,13 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UTextBlock> WeaponName;
 	
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> CurrentBullets;
+	
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> AllBullets;
+	
 	void UpdateWeaponName(const FText& NewWeaponName);
+	void UpdateCurrentBullets(int32 NewBulletNum);
+	void UpdateAllBullets(int32 NewAllBulletNum);
 };

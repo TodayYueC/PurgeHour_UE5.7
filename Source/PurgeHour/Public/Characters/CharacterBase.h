@@ -25,5 +25,9 @@ public:
 
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
+	
+	UFUNCTION(BLueprintCallable,Category="UniversalTool")
+	bool UniDoLineTrace(const FVector& StartLocation,const FRotator& StartRotation,float TraceDistance,FHitResult& HitResult,bool bDraw);
+	
+	
 };

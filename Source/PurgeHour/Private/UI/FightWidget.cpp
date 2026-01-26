@@ -8,14 +8,32 @@
 void UFightWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
-	GetGameInstance()->GetSubsystem<UDelegatesSubsystem>()->WeaponNameChangedDelegate.BindUObject(this, &UFightWidget::UpdateWeaponName);
+	UDelegatesSubsystem* DelegatesSubsystem = GetGameInstance()->GetSubsystem<UDelegatesSubsystem>();
+	if (DelegatesSubsystem)
+	{
+		DelegatesSubsystem->WeaponNameChangedDelegate.AddUObject(this, &UFightWidget::UpdateWeaponName);
+		DelegatesSubsystem->CurrentBulletNumChangedDelegate.AddUObject(this, &UFightWidget::UpdateCurrentBullets);
+		DelegatesSubsystem->AllBulletNumChangedDelegate.AddUObject(this, &UFightWidget::UpdateAllBullets);
+	}
 }
 
 void UFightWidget::UpdateWeaponName(const FText& NewWeaponName)
 {
-	if (this->WeaponName)
-	{
-		this->WeaponName->SetText(NewWeaponName);
-	}
+	//if (this->WeaponName)
+	//{
+		//this->
+		WeaponName->SetText(NewWeaponName);
+	//}
 }
+
+void UFightWidget::UpdateCurrentBullets(int32 NewBulletNum)
+{
+	CurrentBullets->SetText(FText::AsNumber(NewBulletNum));
+}
+
+void UFightWidget::UpdateAllBullets(int32 NewAllBulletNum)
+{
+	AllBullets->SetText(FText::AsNumber(NewAllBulletNum));
+}
+
 //FText::FromString(WeaponName)
