@@ -6,9 +6,8 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "DelegatesSubsystem.generated.h"
 
-DECLARE_MULTICAST_DELEGATE_OneParam(FWeaponNameChangedDelegate, const FText&)
-DECLARE_MULTICAST_DELEGATE_OneParam(FCurrentBulletNumChangedDelegate, int32);
-DECLARE_MULTICAST_DELEGATE_OneParam(FAllBulletNumChangedDelegate, int32);
+// 所有 UI 广播委托已迁移到 HeroPlayerState，此文件保留空壳备用
+
 /**
  * 
  */
@@ -16,8 +15,4 @@ UCLASS()
 class PURGEHOUR_API UDelegatesSubsystem : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
-public:
-	FWeaponNameChangedDelegate WeaponNameChangedDelegate;
-	FCurrentBulletNumChangedDelegate CurrentBulletNumChangedDelegate;
-	FAllBulletNumChangedDelegate AllBulletNumChangedDelegate;
 };

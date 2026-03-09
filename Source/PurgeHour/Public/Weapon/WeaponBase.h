@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayEffect.h"
 #include "GameFramework/Actor.h"
 #include "WeaponBase.generated.h"
 
@@ -40,9 +41,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category = "Weapon")
 	TObjectPtr<UWeaponData> WeaponDataAsset;
 	
-	int32 CurrentBulletNum;
-	
-	int32 AllBulletNum;
+	// 子弹数量已迁移到GAS属性集，注释保留
+	// int32 CurrentBulletNum;
+	// int32 AllBulletNum;
 	
 	int32 OffsetNum;
 	float PendingRecoilPitch = 0.0f;
@@ -94,12 +95,15 @@ protected:
 	UPROPERTY(EditDefaultsOnly,Category="Decal")
 	TObjectPtr<UMaterialInterface> BulletDecalMaterial;
 	
+
+
 	UFUNCTION()
 	void OnPickupBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 	
 	virtual void OnConstruction(const FTransform& Transform) override;
 	
-	FTimerHandle ShootTimerHandle;
+	// 开火计时器已迁移到GAS，注释保留
+	// FTimerHandle ShootTimerHandle;
 	
 	//初始化数据
 	void InitWeaponData();
@@ -110,17 +114,20 @@ public:
 	UFUNCTION(BlueprintCallable,Category="Weapon")
 	FORCEINLINE UWeaponData* GetWeaponDataAsset() const { return WeaponDataAsset; }
 	
-	UFUNCTION(BlueprintCallable,Category="Bullet")
-	FORCEINLINE int32 GetCurrentBulletNum() const { return CurrentBulletNum; }
+	// 子弹数量相关函数已迁移到GAS属性集，注释保留
+	// UFUNCTION(BlueprintCallable,Category="Bullet")
+	// FORCEINLINE int32 GetCurrentBulletNum() const { return CurrentBulletNum; }
+	//
+	// UFUNCTION(BlueprintCallable,Category="Bullet")
+	// FORCEINLINE int32 GetAllBulletNum() const { return AllBulletNum; }
 	
-	UFUNCTION(BlueprintCallable,Category="Bullet")
-	FORCEINLINE int32 GetAllBulletNum() const { return AllBulletNum; }
+	// 以下开火相关函数已全部迁移到GAS，注释保留
+	// void Fire();
+	// void StopFire();
+	// void ShootTime();
 	
-	void Fire();
-	void StopFire();
-	void ShootTime();
-	
-	void InitBulletNumUI();
+	// 子弹UI广播已迁移到GAS属性集，注释保留
+	// void InitBulletNumUI();
 	
 	//获取拥有者
 	UFUNCTION(BlueprintCallable, BlueprintPure,Category = "Weapon")
@@ -130,8 +137,14 @@ public:
 	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly, Category = "GAS")
 	TSubclassOf<UBaseWeaponGA> GAFireClass;
 	
+	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly, Category = "GAS")	
+	TSubclassOf<UBaseWeaponGA> GAReloadClass;
+	
 	UFUNCTION(BlueprintCallable, Category = "GAS")
 	TSubclassOf<UBaseWeaponGA> GetGAFireClass() const { return GAFireClass; }
+	
+	UFUNCTION(BlueprintCallable, Category = "GAS")
+	TSubclassOf<UBaseWeaponGA> GetGAReloadClass() const { return GAReloadClass; }
 
 	// 获取静态网格体组件
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Weapon")

@@ -42,6 +42,10 @@ void AHeroController::SetupInputComponent()
 			EnhancedInputComponent->BindAction(HeroFocusAim, ETriggerEvent::Started, this, &AHeroController::FocusAimOpen);
 			EnhancedInputComponent->BindAction(HeroFocusAim, ETriggerEvent::Completed, this, &AHeroController::FocusAimClose);
 		}
+		if (HeroReload)
+		{
+			EnhancedInputComponent->BindAction(HeroReload, ETriggerEvent::Started, this, &AHeroController::Reload);
+		}
 	}
 }
 
@@ -116,3 +120,13 @@ void AHeroController::FocusAimClose()
 		HeroCharacter->AimFocusClose();
 	}
 }
+
+void AHeroController::Reload()
+{
+	AHero* HeroCharacter = GetPawn<AHero>();
+	if (IsValid(HeroCharacter))
+	{
+		HeroCharacter->Reload();
+	}
+}
+

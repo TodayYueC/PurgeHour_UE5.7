@@ -7,6 +7,7 @@
 #include "FightWidget.generated.h"
 
 class UTextBlock;
+class UProgressBar;
 /**
  * 
  */
@@ -28,7 +29,21 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UTextBlock> AllBullets;
 	
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UProgressBar> HealthBar;
+
+	// 缓存最大血量用于计算百分比
+	float MaxHealth = 100.f;
+
+	// 动态委托回调必须是 UFUNCTION
+	UFUNCTION()
 	void UpdateWeaponName(const FText& NewWeaponName);
+	UFUNCTION()
 	void UpdateCurrentBullets(int32 NewBulletNum);
-	void UpdateAllBullets(int32 NewAllBulletNum);
+	UFUNCTION()
+	void UpdateReserveAmmo(int32 NewReserveAmmo);
+	UFUNCTION()
+	void UpdateHealth(float NewHealth);
+	UFUNCTION()
+	void UpdateMaxHealth(float NewMaxHealth);
 };

@@ -34,4 +34,19 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "Attributes")
 	FGameplayAttributeData MaxHealth;
 	ATTRIBUTE_ACCESSORS(UHeroAttributeSet, MaxHealth)
+	
+	UPROPERTY(BlueprintReadOnly, Category = "Attributes")
+	FGameplayAttributeData Ammo;
+	ATTRIBUTE_ACCESSORS(UHeroAttributeSet, Ammo)
+	
+	UPROPERTY(BlueprintReadOnly, Category = "Attributes")
+	FGameplayAttributeData MaxAmmo;
+	ATTRIBUTE_ACCESSORS(UHeroAttributeSet, MaxAmmo)
+
+	// 备弹数量（弹夹之外携带的子弹）
+	UPROPERTY(BlueprintReadOnly, Category = "Attributes")
+	FGameplayAttributeData ReserveAmmo;
+	ATTRIBUTE_ACCESSORS(UHeroAttributeSet, ReserveAmmo)
+	
+	virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data) override;
 };

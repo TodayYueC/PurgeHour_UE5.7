@@ -30,6 +30,8 @@ public:
 	UInputAction* HeroFire;
 	UPROPERTY(EditDefaultsOnly,Category="Input")
 	UInputAction* HeroFocusAim;
+	UPROPERTY(EditDefaultsOnly,Category="Input")
+	UInputAction* HeroReload;
 
 protected:
 	virtual void BeginPlay() override;
@@ -43,5 +45,6 @@ protected:
 	void StopFire () ;
 	void FocusAimOpen () ;
 	void FocusAimClose () ;
+	void Reload();
 	
 };

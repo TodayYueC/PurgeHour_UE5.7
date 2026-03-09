@@ -17,6 +17,9 @@
 
 AHero::AHero()
 {
+	// Hero 需要 Tick（CharacterBase 已关闭，此处单独开启）
+	PrimaryActorTick.bCanEverTick = true;
+	
 	//////////////////////////////摄像机与弹簧臂组件//////////////////////////////////
 	SpringArmComponent = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArmComponent"));
 	SpringArmComponent->SetupAttachment(RootComponent);
@@ -91,7 +94,14 @@ void AHero::PickUpWeapon(AWeaponBase* NewWeapon)
 		UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
 		if (ASC && CurrentWeapon->GetGAFireClass())
 		{
-			GAFireHandle= ASC->GiveAbility(FGameplayAbilitySpec(CurrentWeapon->GetGAFireClass(), 1, -1, CurrentWeapon));
+			FGameplayAbilitySpec FireSpec(CurrentWeapon->GetGAFireClass(), 1, -1, CurrentWeapon);
+			FireSpec.GetDynamicSpecSourceTags().AddTag(FGameplayTag::RequestGameplayTag(FName("Weapon.Fire")));
+			GAFireHandle= ASC->GiveAbility(FireSpec);
+		}
+		if (ASC && CurrentWeapon->GetGAReloadClass())
+		{
+			FGameplayAbilitySpec ReloadSpec(CurrentWeapon->GetGAReloadClass(), 1, -1, CurrentWeapon);
+			GAReloadHandle= ASC->GiveAbility(ReloadSpec);
 		}
 	}
 }
@@ -100,15 +110,32 @@ void AHero::Fire()
 {
 	if (CurrentHeroState == EHeroState::HoldingWeapon && CurrentWeapon)
 	{
-		if (CurrentWeapon->GetCurrentBulletNum()<=0)
-		{
-			UGameplayStatics::PlaySound2D(GetWorld(), EmptyMagazineSound);
-		}
-		CurrentWeapon->Fire();
+		// 开火已整合到GA，仅设置状态标记
+		bIsFiring = true;
+		
+		// 以下调用武器开火的逻辑已整合到GA，注释保留
+		// if (CurrentWeapon->GetCurrentBulletNum()<=0)
+		// {
+		// 	UGameplayStatics::PlaySound2D(GetWorld(), EmptyMagazineSound);
+		// }
+		// CurrentWeapon->Fire();
 		if (GetAbilitySystemComponent() && GAFireHandle.IsValid())
 		{
+			FGameplayAbilitySpec* Spec = GetAbilitySystemComponent()->FindAbilitySpecFromHandle(GAFireHandle);
+			if (Spec)
+			{
+				Spec->InputPressed = true;
+			}
 			GetAbilitySystemComponent()->TryActivateAbility(GAFireHandle);
 		}
+	}
+}
+
+void AHero::Reload()
+{
+	if (GetAbilitySystemComponent() && GAReloadHandle.IsValid())
+	{
+		GetAbilitySystemComponent()->TryActivateAbility(GAReloadHandle);
 	}
 }
 
@@ -116,7 +143,21 @@ void AHero::StopFire()
 {
 	if (CurrentHeroState == EHeroState::HoldingWeapon && CurrentWeapon)
 	{
-		CurrentWeapon->StopFire();
+		// 开火已整合到GA，仅清除状态标记
+		bIsFiring = false;
+		if (GetAbilitySystemComponent() && GAFireHandle.IsValid())
+		{
+			FGameplayAbilitySpec* FireSpec = GetAbilitySystemComponent()->FindAbilitySpecFromHandle(GAFireHandle);
+			if (FireSpec)
+			{
+				FireSpec->InputPressed = false; // 取消输入标记，触发GA中停止开火的逻辑
+				GetAbilitySystemComponent()->CancelAbilityHandle(GAFireHandle); // 直接取消技能，确保开火停止
+			}
+		}
+		
+		
+		// 以下调用武器停火的逻辑已整合到GA，注释保留
+		// CurrentWeapon->StopFire();
 	}
 }
 

@@ -58,8 +58,11 @@ protected:
 	void InitGEToSelf();
 	
 	//GA
-	UPROPERTY(VisibleAnywhere,BlueprintReadOnly, Category = "GE")
+	UPROPERTY(VisibleAnywhere,BlueprintReadOnly, Category = "GA")
 	FGameplayAbilitySpecHandle GAFireHandle;
+	
+	UPROPERTY(VisibleAnywhere,BlueprintReadOnly, Category = "GA")
+	FGameplayAbilitySpecHandle GAReloadHandle;
 	
 public:
 	virtual void Tick(float DeltaTime) override;
@@ -72,15 +75,22 @@ public:
 	FORCEINLINE EHeroState GetCurrentHeroState() { return CurrentHeroState; }
 	
 	//开火相关
+	// 是否正在开火（已整合到GA，不再经过武器判断）
+	UPROPERTY(BlueprintReadWrite, Category = "Hero")
+	bool bIsFiring = false;
+	
 	void Fire();
 	void StopFire();
+	void Reload();
 	UFUNCTION(BlueprintImplementableEvent,Category = "Hero")	
 	void AimFocusOpen();
 	UFUNCTION(BlueprintImplementableEvent,Category = "Hero")
 	void AimFocusClose();
 	
 	//后坐力
+	UFUNCTION(BlueprintCallable, Category = "Offset")
 	void AddPitchOffset(float PitchOffsetAmount);
+	UFUNCTION(BlueprintCallable, Category = "Offset")
 	void AddYawOffset(float YawOffsetAmount);
 	
 	//获取当前武器

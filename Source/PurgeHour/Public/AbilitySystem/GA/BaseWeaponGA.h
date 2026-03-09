@@ -17,9 +17,12 @@ class PURGEHOUR_API UBaseWeaponGA : public UBaseGA
 public:
 	UBaseWeaponGA();
 	
-	UFUNCTION(BlueprintCallable, BlueprintPure,Category = "Get")
-	AWeaponBase* GetCurrentWeapon() ;
-	
-	
-	
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Get")
+	AWeaponBase* GetCurrentWeapon();
+
+	UPROPERTY(EditDefaultsOnly,Category="GAS")
+	TSubclassOf<UGameplayEffect> ReloadGEClass;
+
+	UFUNCTION(BlueprintCallable, Category = "Weapon|Reload")
+	void CalculateReload();
 };
