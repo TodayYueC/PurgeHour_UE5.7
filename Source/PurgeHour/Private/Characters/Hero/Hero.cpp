@@ -9,6 +9,11 @@
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundCue.h"
 #include "Weapon/WeaponBase.h"
+#include "AbilitySystem/HeroYueASC.h"
+#include "System/HeroPlayerState.h"
+#include "AbilitySystemComponent.h"
+#include "GameplayEffectTypes.h"
+#include "AbilitySystem/GA/BaseWeaponGA.h"
 
 AHero::AHero()
 {
@@ -38,6 +43,30 @@ void AHero::BeginPlay()
 {
 	Super::BeginPlay();
 	CurrentHeroState = EHeroState::EmptyHanded;
+	Init();
+}
+
+void AHero::Init()
+{
+	InitGEToSelf();
+}
+
+void AHero::InitGEToSelf()
+{
+	UAbilitySystemComponent* AbilitySystemComponent = GetAbilitySystemComponent();
+	if (!AbilitySystemComponent || !InitGE)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Ability System Component Or InitGE is NULL"));
+		return;
+	}
+	
+	FGameplayEffectContextHandle InitContextHandle = AbilitySystemComponent->MakeEffectContext();
+	InitContextHandle.AddInstigator(this,this);
+	
+	FGameplayEffectSpecHandle InitSpecHandle = AbilitySystemComponent->MakeOutgoingSpec(InitGE, 1, InitContextHandle);
+	if (InitSpecHandle.IsValid())
+	{		AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*InitSpecHandle.Data.Get());
+	}
 }
 
 void AHero::Tick(float DeltaTime)
@@ -57,6 +86,13 @@ void AHero::PickUpWeapon(AWeaponBase* NewWeapon)
 
 		//持枪：强制吸附到插槽位置
 		CurrentWeapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("WeaponSocket"));
+	
+		//赋予枪械技能
+		UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+		if (ASC && CurrentWeapon->GetGAFireClass())
+		{
+			GAFireHandle= ASC->GiveAbility(FGameplayAbilitySpec(CurrentWeapon->GetGAFireClass(), 1, -1, CurrentWeapon));
+		}
 	}
 }
 
@@ -69,6 +105,10 @@ void AHero::Fire()
 			UGameplayStatics::PlaySound2D(GetWorld(), EmptyMagazineSound);
 		}
 		CurrentWeapon->Fire();
+		if (GetAbilitySystemComponent() && GAFireHandle.IsValid())
+		{
+			GetAbilitySystemComponent()->TryActivateAbility(GAFireHandle);
+		}
 	}
 }
 
@@ -88,6 +128,37 @@ void AHero::AddPitchOffset(float PitchOffsetAmount)
 void AHero::AddYawOffset(float YawOffsetAmount)
 {
 	AddControllerYawInput(YawOffsetAmount);
+}
+
+UAbilitySystemComponent* AHero::GetAbilitySystemComponent() const
+{
+	AHeroPlayerState* HeroPlayerState = GetPlayerState<AHeroPlayerState>();
+	if (HeroPlayerState)
+	{
+		return HeroPlayerState->GetAbilitySystemComponent();
+	}
+	return nullptr;
+}
+
+void AHero::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+	
+	AHeroPlayerState* HeroPlayerState = GetPlayerState<AHeroPlayerState>();
+	if (HeroPlayerState)
+	{
+		HeroPlayerState->GetAbilitySystemComponent()->InitAbilityActorInfo(HeroPlayerState, this);
+	}
+}
+
+void AHero::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+	AHeroPlayerState* HeroPlayerState = GetPlayerState<AHeroPlayerState>();
+	if (HeroPlayerState)
+	{
+		HeroPlayerState->GetAbilitySystemComponent()->InitAbilityActorInfo(HeroPlayerState, this);
+	}
 }
 
 

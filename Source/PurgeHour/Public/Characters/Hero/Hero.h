@@ -5,18 +5,20 @@
 #include "CoreMinimal.h"
 #include "Characters/CharacterBase.h"
 #include "PureData/HeroState.h"
+#include "AbilitySystemInterface.h"
+#include "GameplayAbilitySpec.h"
 #include "Hero.generated.h"
 class AWeaponBase;
 class UWeaponData;
 class USpringArmComponent;
 class UCameraComponent;
-
+class UGameplayEffect;
 
 /**
  * 
  */
 UCLASS()
-class PURGEHOUR_API AHero : public ACharacterBase
+class PURGEHOUR_API AHero : public ACharacterBase, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 public:
@@ -27,7 +29,7 @@ public:
 	TObjectPtr<UAnimMontage> FireMontage;
 protected:
 	virtual void BeginPlay() override;
-	
+	void Init();
 	
 	//摄像机与弹簧臂组件
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
@@ -47,6 +49,17 @@ protected:
 	//空弹夹音效
 	UPROPERTY(EditDefaultsOnly,Category="Sound")
 	TObjectPtr<USoundCue> EmptyMagazineSound;
+	
+	//GAS
+	//初始化GE
+	UPROPERTY(EditDefaultsOnly,Category="GE")
+	TSubclassOf<UGameplayEffect> InitGE;
+	
+	void InitGEToSelf();
+	
+	//GA
+	UPROPERTY(VisibleAnywhere,BlueprintReadOnly, Category = "GE")
+	FGameplayAbilitySpecHandle GAFireHandle;
 	
 public:
 	virtual void Tick(float DeltaTime) override;
@@ -73,4 +86,10 @@ public:
 	//获取当前武器
 	UFUNCTION(BlueprintCallable,BlueprintPure,Category="Hero")
 	FORCEINLINE AWeaponBase* GetCurrentWeapon() { return CurrentWeapon; }
+	
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+	
+	virtual void PossessedBy(AController* NewController) override;
+	
+	virtual void OnRep_PlayerState() override;
 };

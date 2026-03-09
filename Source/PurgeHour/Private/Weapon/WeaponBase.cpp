@@ -146,7 +146,7 @@ void AWeaponBase::ShootTime()
 		FRotator StartRotation;
 		WeaponOwner->GetController()->GetPlayerViewPoint(StartLocation, StartRotation);
 		FHitResult HitResult;
-		bool bHit = WeaponOwner->UniDoLineTrace(StartLocation, StartRotation, 10000.0f, HitResult,true);
+		//bool bHit = WeaponOwner->UniDoLineTrace(StartLocation, StartRotation, 10000.0f, HitResult,true);
 		
 		// //添加后坐力
 		// if (OffsetNum < 4)
@@ -186,60 +186,61 @@ void AWeaponBase::ShootTime()
 			WeaponOwner->AddYawOffset(FMath::RandRange(-YawOffset*4, YawOffset*4));
 		}
 		
-		if (bHit)
-		{
-			if (HitResult.PhysMaterial.Get())
-			{
-				switch (HitResult.PhysMaterial.Get()->SurfaceType)
-				{
-				case SurfaceType1:
-					UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), DirtEffect, HitResult.Location, HitResult.Normal.Rotation());
-					UGameplayStatics::PlaySoundAtLocation(GetWorld(), DirtSound, HitResult.Location);
-					break;
-				case SurfaceType2:
-					UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), GrassEffect, HitResult.Location, HitResult.Normal.Rotation());
-					UGameplayStatics::PlaySoundAtLocation(GetWorld(), GrassSound, HitResult.Location);
-					break;
-				case SurfaceType3:
-					UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), RockEffect, HitResult.Location, HitResult.Normal.Rotation());
-					UGameplayStatics::PlaySoundAtLocation(GetWorld(), RockSound, HitResult.Location);
-					break;
-				case SurfaceType4:
-					UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), MetalEffect, HitResult.Location, HitResult.Normal.Rotation());
-					UGameplayStatics::PlaySoundAtLocation(GetWorld(), MetalSound, HitResult.Location);
-					break;
-				case SurfaceType5:
-					UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), WoodEffect, HitResult.Location, HitResult.Normal.Rotation());
-					UGameplayStatics::PlaySoundAtLocation(GetWorld(), WoodSound, HitResult.Location);
-					break;
-				default:
-					break;
-				}
-			}
-			
-			// 设置较小的FadeScreenSize防止稍微离远就看不见弹孔
-			FVector DecalSize(10.0f, 5.0f, 5.0f);
-			if (UDecalComponent* DecalComp = UGameplayStatics::SpawnDecalAtLocation(GetWorld(), BulletDecalMaterial, DecalSize, HitResult.Location, HitResult.Normal.Rotation(), 30.0f))
-			{
-				DecalComp->SetFadeScreenSize(0.005f);
-			}
-		}
+		// 击中特效、音效、弹孔已迁移到GC，此处注释
+		// if (bHit)
+		// {
+		// 	if (HitResult.PhysMaterial.Get())
+		// 	{
+		// 		switch (HitResult.PhysMaterial.Get()->SurfaceType)
+		// 		{
+		// 		case SurfaceType1:
+		// 			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), DirtEffect, HitResult.Location, HitResult.Normal.Rotation());
+		// 			UGameplayStatics::PlaySoundAtLocation(GetWorld(), DirtSound, HitResult.Location);
+		// 			break;
+		// 		case SurfaceType2:
+		// 			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), GrassEffect, HitResult.Location, HitResult.Normal.Rotation());
+		// 			UGameplayStatics::PlaySoundAtLocation(GetWorld(), GrassSound, HitResult.Location);
+		// 			break;
+		// 		case SurfaceType3:
+		// 			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), RockEffect, HitResult.Location, HitResult.Normal.Rotation());
+		// 			UGameplayStatics::PlaySoundAtLocation(GetWorld(), RockSound, HitResult.Location);
+		// 			break;
+		// 		case SurfaceType4:
+		// 			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), MetalEffect, HitResult.Location, HitResult.Normal.Rotation());
+		// 			UGameplayStatics::PlaySoundAtLocation(GetWorld(), MetalSound, HitResult.Location);
+		// 			break;
+		// 		case SurfaceType5:
+		// 			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), WoodEffect, HitResult.Location, HitResult.Normal.Rotation());
+		// 			UGameplayStatics::PlaySoundAtLocation(GetWorld(), WoodSound, HitResult.Location);
+		// 			break;
+		// 		default:
+		// 			break;
+		// 		}
+		// 	}
+		//
+		// 	// 设置较小的FadeScreenSize防止稍微离远就看不见弹孔
+		// 	FVector DecalSize(10.0f, 5.0f, 5.0f);
+		// 	if (UDecalComponent* DecalComp = UGameplayStatics::SpawnDecalAtLocation(GetWorld(), BulletDecalMaterial, DecalSize, HitResult.Location, HitResult.Normal.Rotation(), 30.0f))
+		// 	{
+		// 		DecalComp->SetFadeScreenSize(0.005f);
+		// 	}
+		// }
 	}
 	
-	//播放音效和动画
-	if (WeaponDataAsset)
-	{
-		//播放开火动画
-		if (WeaponSkeletalMesh && WeaponDataAsset->FireAnimation)
-		{
-			WeaponSkeletalMesh->PlayAnimation(WeaponDataAsset->FireAnimation, false);
-		}
-		
-		if (WeaponDataAsset->FireSound)
-		{
-			UGameplayStatics::PlaySound2D(GetWorld(), WeaponDataAsset->FireSound);
-		}
-	}
+	// 开火动画与音效已迁移到GC，此处注释
+	// if (WeaponDataAsset)
+	// {
+	// 	//播放开火动画
+	// 	if (WeaponSkeletalMesh && WeaponDataAsset->FireAnimation)
+	// 	{
+	// 		WeaponSkeletalMesh->PlayAnimation(WeaponDataAsset->FireAnimation, false);
+	// 	}
+	//
+	// 	if (WeaponDataAsset->FireSound)
+	// 	{
+	// 		UGameplayStatics::PlaySound2D(GetWorld(), WeaponDataAsset->FireSound);
+	// 	}
+	// }
 }
 
 void AWeaponBase::InitBulletNumUI()

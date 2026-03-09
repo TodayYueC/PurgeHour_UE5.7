@@ -9,6 +9,7 @@
 class AHero;
 class UWeaponData;
 class USphereComponent;
+class UBaseWeaponGA;
 
 UCLASS()
 class PURGEHOUR_API AWeaponBase : public AActor
@@ -36,7 +37,7 @@ protected:
 	TObjectPtr<USphereComponent> PickupCollision;
 	
 	// 数据
-	UPROPERTY(EditDefaultsOnly,Category = "Weapon")
+	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category = "Weapon")
 	TObjectPtr<UWeaponData> WeaponDataAsset;
 	
 	int32 CurrentBulletNum;
@@ -120,4 +121,25 @@ public:
 	void ShootTime();
 	
 	void InitBulletNumUI();
+	
+	//获取拥有者
+	UFUNCTION(BlueprintCallable, BlueprintPure,Category = "Weapon")
+	FORCEINLINE AHero* GetWeaponOwner()  { return WeaponOwner; }
+	
+	//技能系统
+	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly, Category = "GAS")
+	TSubclassOf<UBaseWeaponGA> GAFireClass;
+	
+	UFUNCTION(BlueprintCallable, Category = "GAS")
+	TSubclassOf<UBaseWeaponGA> GetGAFireClass() const { return GAFireClass; }
+
+	// 获取静态网格体组件
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Weapon")
+	FORCEINLINE UStaticMeshComponent* GetWeaponMesh() const { return WeaponMesh; }
+
+	// 获取骨骼网格体组件
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Weapon")
+	FORCEINLINE USkeletalMeshComponent* GetWeaponSkeletalMesh() const { return WeaponSkeletalMesh; }
+	
+	
 };
