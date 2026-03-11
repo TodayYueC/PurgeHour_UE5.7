@@ -32,6 +32,10 @@ public:
 	UInputAction* HeroFocusAim;
 	UPROPERTY(EditDefaultsOnly,Category="Input")
 	UInputAction* HeroReload;
+	UPROPERTY(EditDefaultsOnly,Category="Input")
+	UInputAction* HeroMelee;
+	UPROPERTY(EditDefaultsOnly,Category="Input")
+	UInputAction* HeroCombo;
 
 protected:
 	virtual void BeginPlay() override;
@@ -46,5 +50,7 @@ protected:
 	void FocusAimOpen () ;
 	void FocusAimClose () ;
 	void Reload();
+	void Melee();
+	void Combo();
 	
 };

@@ -9,11 +9,15 @@
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundCue.h"
 #include "Weapon/WeaponBase.h"
+#include "Weapon/SwordBase.h"
 #include "AbilitySystem/HeroYueASC.h"
 #include "System/HeroPlayerState.h"
 #include "AbilitySystemComponent.h"
 #include "GameplayEffectTypes.h"
 #include "AbilitySystem/GA/BaseWeaponGA.h"
+#include "AbilitySystem/GA/BaseSwordGA.h"
+#include "MotionWarpingComponent.h"
+#include "Engine/Engine.h"
 
 AHero::AHero()
 {
@@ -40,6 +44,8 @@ AHero::AHero()
 	JumpMaxHoldTime = 0.2f;
 	GetCharacterMovement()->GravityScale = 2.0f;
 	GetCharacterMovement()->AirControl = 0.5f;
+	
+	MotionWarpingComponent = CreateDefaultSubobject<UMotionWarpingComponent>(TEXT("MotionWarpingComponent"));
 }
 
 void AHero::BeginPlay()
@@ -75,41 +81,104 @@ void AHero::InitGEToSelf()
 void AHero::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	// ---- 后坐力施加：在 RecoilApplyTime 秒内线性消耗完 Pending ----
+	if (!FMath::IsNearlyZero(PendingRecoilPitch, 0.001f) && RecoilPitchTimeRemaining > 0.f)
+	{
+		const float ApplyPitch = PendingRecoilPitch * FMath::Min(DeltaTime / RecoilPitchTimeRemaining, 1.0f);
+		AddControllerPitchInput(-ApplyPitch);
+		PendingRecoilPitch -= ApplyPitch;
+		RecoilPitchTimeRemaining -= DeltaTime;
+		if (RecoilPitchTimeRemaining <= 0.f || FMath::Abs(PendingRecoilPitch) < 0.001f)
+		{
+			PendingRecoilPitch = 0.f;
+			RecoilPitchTimeRemaining = 0.f;
+		}
+	}
+
+	if (!FMath::IsNearlyZero(PendingRecoilYaw, 0.001f) && RecoilYawTimeRemaining > 0.f)
+	{
+		const float ApplyYaw = PendingRecoilYaw * FMath::Min(DeltaTime / RecoilYawTimeRemaining, 1.0f);
+		AddControllerYawInput(ApplyYaw);
+		PendingRecoilYaw -= ApplyYaw;
+		RecoilYawTimeRemaining -= DeltaTime;
+		if (RecoilYawTimeRemaining <= 0.f || FMath::Abs(PendingRecoilYaw) < 0.001f)
+		{
+			PendingRecoilYaw = 0.f;
+			RecoilYawTimeRemaining = 0.f;
+		}
+	}
+
+	// ---- 后坐力计数自动恢复：停止射击超过 Delay 后，计数按 Speed 逐帧递减 ----
+	if (RecoilShotCount > 0.f)
+	{
+		TimeSinceLastShot += DeltaTime;
+		if (TimeSinceLastShot >= RecoilRecoveryDelay)
+		{
+			RecoilShotCount = FMath::Max(0.f, RecoilShotCount - RecoilRecoverySpeed * DeltaTime);
+		}
+	}
 }
 
 void AHero::PickUpWeapon(AWeaponBase* NewWeapon)
 {
 	if (NewWeapon)
 	{
-		//先直接捡，以后再扩展背包系统
 		CurrentWeapon = NewWeapon;
 		SetCurrentHeroState(EHeroState::HoldingWeapon);
-		// 禁用碰撞
 		NewWeapon->SetActorEnableCollision(false);
-
-		//持枪：强制吸附到插槽位置
 		CurrentWeapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("WeaponSocket"));
-	
-		//赋予枪械技能
+
+		// 持枪时朝视角方向旋转
+		bUseControllerRotationYaw = true;
+		GetCharacterMovement()->bOrientRotationToMovement = false;
+
 		UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
 		if (ASC && CurrentWeapon->GetGAFireClass())
 		{
 			FGameplayAbilitySpec FireSpec(CurrentWeapon->GetGAFireClass(), 1, -1, CurrentWeapon);
 			FireSpec.GetDynamicSpecSourceTags().AddTag(FGameplayTag::RequestGameplayTag(FName("Weapon.Fire")));
-			GAFireHandle= ASC->GiveAbility(FireSpec);
+			GAFireHandle = ASC->GiveAbility(FireSpec);
 		}
 		if (ASC && CurrentWeapon->GetGAReloadClass())
 		{
 			FGameplayAbilitySpec ReloadSpec(CurrentWeapon->GetGAReloadClass(), 1, -1, CurrentWeapon);
-			GAReloadHandle= ASC->GiveAbility(ReloadSpec);
+			GAReloadHandle = ASC->GiveAbility(ReloadSpec);
 		}
 	}
 }
 
+void AHero::PickUpSword(ASwordBase* NewSword)
+{
+	if (!NewSword) return;
+
+	CurrentSword = NewSword;
+	SetCurrentHeroState(EHeroState::HoldingSword);
+
+	// 禁用碰撞，防止再次触发重叠
+	NewSword->SetActorEnableCollision(false);
+
+	// 吸附到 Sword 插槽
+	CurrentSword->AttachToComponent(GetMesh(),
+		FAttachmentTransformRules::SnapToTargetNotIncludingScale,
+		TEXT("SwordSocket"));
+
+	// 持剑时切换为朝运动方向旋转（第三人称近战风格）
+	bUseControllerRotationYaw = false;
+	GetCharacterMovement()->bOrientRotationToMovement = true;
+	
+	//GAS
+	FGameplayAbilitySpec AttackSpec(CurrentSword->GetGAAttackClass(), 1, -1, CurrentSword);
+	GAAttackHandle = GetAbilitySystemComponent()->GiveAbility(AttackSpec);
+	
+	FGameplayAbilitySpec ComboSpec(CurrentSword->GetGAComboClass(), 1, -1, CurrentSword);
+	GAComboHandle = GetAbilitySystemComponent()->GiveAbility(ComboSpec);
+}
+
 void AHero::Fire()
 {
-	if (CurrentHeroState == EHeroState::HoldingWeapon && CurrentWeapon)
-	{
+	if (CurrentHeroState != EHeroState::HoldingWeapon || !CurrentWeapon) return;
+	
 		// 开火已整合到GA，仅设置状态标记
 		bIsFiring = true;
 		
@@ -128,11 +197,13 @@ void AHero::Fire()
 			}
 			GetAbilitySystemComponent()->TryActivateAbility(GAFireHandle);
 		}
-	}
+	
 }
 
 void AHero::Reload()
 {
+	if (CurrentHeroState != EHeroState::HoldingWeapon || !CurrentWeapon) return;
+	
 	if (GetAbilitySystemComponent() && GAReloadHandle.IsValid())
 	{
 		GetAbilitySystemComponent()->TryActivateAbility(GAReloadHandle);
@@ -141,8 +212,8 @@ void AHero::Reload()
 
 void AHero::StopFire()
 {
-	if (CurrentHeroState == EHeroState::HoldingWeapon && CurrentWeapon)
-	{
+	if (CurrentHeroState != EHeroState::HoldingWeapon || !CurrentWeapon) return;
+	
 		// 开火已整合到GA，仅清除状态标记
 		bIsFiring = false;
 		if (GetAbilitySystemComponent() && GAFireHandle.IsValid())
@@ -151,6 +222,7 @@ void AHero::StopFire()
 			if (FireSpec)
 			{
 				FireSpec->InputPressed = false; // 取消输入标记，触发GA中停止开火的逻辑
+				
 				GetAbilitySystemComponent()->CancelAbilityHandle(GAFireHandle); // 直接取消技能，确保开火停止
 			}
 		}
@@ -158,6 +230,108 @@ void AHero::StopFire()
 		
 		// 以下调用武器停火的逻辑已整合到GA，注释保留
 		// CurrentWeapon->StopFire();
+	
+}
+
+void AHero::ApplyRecoil(float HorizontalRecoil, float VerticalRecoil, int32 MaxRecoilCount)
+{
+	// 递增连发计数（float，方便Tick里平滑恢复）
+	RecoilShotCount += 1.f;
+
+	const float MaxCount = static_cast<float>(MaxRecoilCount);
+
+	// ---- 1. 斜坡系数：前几发后坐力非常小，第4发才到达满值 ----
+	// ShotCount=1 → ~0.08，ShotCount=2 → ~0.25，ShotCount=3 → ~0.55，ShotCount=4+ → 1.0
+	// 使用 1 - exp(-k*(n-1)) 曲线，k=0.7 时收敛较快
+	const float RampAlpha = 1.f - FMath::Exp(-0.7f * (RecoilShotCount - 1));
+
+	// ---- 2. 超过 MaxRecoilCount 后垂直后坐力大幅衰减（枪在抖但不再明显上移） ----
+	float VerticalScale = 1.f;
+	if (RecoilShotCount > MaxCount)
+	{
+		VerticalScale = 0.15f;
+	}
+
+	// ---- 3. 水平随机：超上限后随机漂移增大，模拟枪械失控 ----
+	const float HorizontalRandomSign = (FMath::RandBool() ? 1.f : -1.f);
+	float HorizontalScale = 1.f;
+	if (RecoilShotCount > MaxCount)
+	{
+		HorizontalScale = 2.5f;
+	}
+
+	// ---- 4. 累加到 Pending，同时重置时间窗口（每发子弹都在 RecoilApplyTime 内施加完） ----
+	PendingRecoilPitch += VerticalRecoil * RampAlpha * VerticalScale;
+	PendingRecoilYaw   += HorizontalRecoil * RampAlpha * HorizontalScale * HorizontalRandomSign;
+	RecoilPitchTimeRemaining = RecoilApplyTime;
+	RecoilYawTimeRemaining   = RecoilApplyTime;
+	// 每次开枪重置计时，阻止恢复
+	TimeSinceLastShot = 0.f;
+}
+
+void AHero::ResetRecoil()
+{
+	// 只清空本次射击的 Pending 后坐力，不重置计数
+	// RecoilShotCount 由 Tick 根据 RecoilRecoveryDelay/Speed 自动恢复
+	// 这样停止开枪再开枪，后坐力依然接着上次的计数继续
+	PendingRecoilPitch       = 0.f;
+	PendingRecoilYaw         = 0.f;
+	RecoilPitchTimeRemaining = 0.f;
+	RecoilYawTimeRemaining   = 0.f;
+}
+
+void AHero::UpdateWarpTarget()
+{
+		
+	float TraceDistance = 350.f;
+	
+	FVector MyLocation = GetActorLocation();
+	FVector MyDirection = GetActorForwardVector();
+	
+	TArray<AActor*> OutActors;
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_Pawn));
+	TArray<AActor*> IgnoreActors;
+	IgnoreActors.Add(this);
+	
+	UKismetSystemLibrary::SphereOverlapActors(GetWorld(), MyLocation, TraceDistance, ObjectTypes, nullptr, IgnoreActors, OutActors);
+	
+	AActor* ClosestActor = nullptr;
+	float ClosestDistance = TraceDistance;
+	
+	for (AActor* Actor : OutActors)
+	{
+		FVector DirectionToActor = (Actor->GetActorLocation() - MyLocation).GetSafeNormal();
+		
+		float DotProduct = FVector::DotProduct(MyDirection, DirectionToActor);
+		if (DotProduct > 0.5f) // 只考虑前方约120度范围内的目标
+		{
+			float Distance = FVector::Dist(MyLocation, Actor->GetActorLocation());
+			if (Distance < ClosestDistance)
+			{
+				ClosestDistance = Distance;
+				ClosestActor = Actor;
+			}
+		}
+	}
+	
+	
+	
+	if (ClosestActor && MotionWarpingComponent)
+	{
+		FVector TargetLocation = ClosestActor->GetActorLocation();
+		FVector DirectionToMe = (MyLocation - TargetLocation).GetSafeNormal();
+		FVector WarpLocation = TargetLocation + DirectionToMe * 80.f; // 在目标前方100单位处设置 Warp 位置
+		
+		FRotator WarpRotater = (TargetLocation - MyLocation).Rotation();
+		WarpRotater.Pitch = 0.f;
+		
+		MotionWarpingComponent->AddOrUpdateWarpTargetFromLocationAndRotation(FName("CombatTarget"),WarpLocation, WarpRotater);
+	
+	}
+	else
+	{
+		MotionWarpingComponent->RemoveWarpTarget(FName("CombatTarget"));
 	}
 }
 
@@ -202,5 +376,36 @@ void AHero::OnRep_PlayerState()
 	}
 }
 
+void AHero::Melee()
+{
+	if (CurrentHeroState != EHeroState::HoldingSword || !CurrentSword) return;
+	
+	if (GetAbilitySystemComponent() && GAAttackHandle.IsValid())
+	{
+		
+			GetAbilitySystemComponent()->TryActivateAbility(GAAttackHandle);
+		
+	}
+}
 
+void AHero::Combo()
+{
+	if (CurrentHeroState != EHeroState::HoldingSword || !CurrentSword) return;
+	
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	if (ASC && GAComboHandle.IsValid())
+	{
+		FGameplayAbilitySpec* Spec = ASC -> FindAbilitySpecFromHandle(GAComboHandle);
+	
+		if (Spec && Spec->IsActive())
+		{
+			FGameplayEventData GameplayEventData;
+			ASC->HandleGameplayEvent(FGameplayTag ::RequestGameplayTag(FName("Input.Combo")), &GameplayEventData);
+		}
+		else
+		{
+			GetAbilitySystemComponent()->TryActivateAbility(GAComboHandle);
+		}
+	}
+}
 

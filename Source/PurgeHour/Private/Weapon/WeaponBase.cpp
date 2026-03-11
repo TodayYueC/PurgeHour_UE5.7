@@ -7,7 +7,7 @@
 // #include "Components/DecalComponent.h"  // 已迁移到GAS
 #include "Data/WeaponData.h"
 #include "Characters/Hero/Hero.h"
-#include "Engine/Engine.h"
+// #include "Engine/Engine.h"  // 已无使用
 // #include "Kismet/GameplayStatics.h"     // 已迁移到GAS
 // #include "Sound/SoundCue.h"             // 已迁移到GAS
 // #include "Subsystem/DelegatesSubsystem.h" // 武器名广播已迁移到 PlayerState
@@ -35,8 +35,7 @@ AWeaponBase::AWeaponBase()
 void AWeaponBase::BeginPlay()
 {
 	Super::BeginPlay();
-	InitWeaponData();
-	
+	// InitWeaponData(); // 旧初始化逻辑已全部迁移，注释保留
 }
 
 void AWeaponBase::OnPickupBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
@@ -77,18 +76,13 @@ void AWeaponBase::OnConstruction(const FTransform& Transform)
 
 void AWeaponBase::InitWeaponData()
 {
-	if (WeaponDataAsset)
-	{
-		// 子弹数量已迁移到GAS属性集，注释保留
-		// CurrentBulletNum = WeaponDataAsset->MaxWeaponBulletNum;
-		// AllBulletNum = 90;
-		
-		PitchOffset = WeaponDataAsset->RecoilPitchOffset;
-		YawOffset = WeaponDataAsset->RecoilYawOffset;
-		
-		OffsetNum = 0;
-
-	}
+	// 旧后坐力赋值已迁移到 Hero::ApplyRecoil，注释保留
+	// if (WeaponDataAsset)
+	// {
+	// 	PitchOffset = WeaponDataAsset->RecoilPitchOffset;
+	// 	YawOffset = WeaponDataAsset->RecoilYawOffset;
+	// 	OffsetNum = 0;
+	// }
 }
 
 // Called every frame

@@ -47,6 +47,4 @@ void UHeroAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallba
 		}
 	}
 	
-
-	// 弹药/血量 UI 广播已迁移到 HeroPlayerState 属性回调，此处不再需要
 }

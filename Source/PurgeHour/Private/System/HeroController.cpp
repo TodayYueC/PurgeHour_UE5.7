@@ -46,6 +46,14 @@ void AHeroController::SetupInputComponent()
 		{
 			EnhancedInputComponent->BindAction(HeroReload, ETriggerEvent::Started, this, &AHeroController::Reload);
 		}
+		if (HeroMelee)
+		{
+			EnhancedInputComponent->BindAction(HeroMelee, ETriggerEvent::Started, this, &AHeroController::Melee);
+		}
+		if (HeroCombo)
+		{
+			EnhancedInputComponent->BindAction(HeroCombo, ETriggerEvent::Started, this, &AHeroController::Combo);
+		}
 	}
 }
 
@@ -127,6 +135,24 @@ void AHeroController::Reload()
 	if (IsValid(HeroCharacter))
 	{
 		HeroCharacter->Reload();
+	}
+}
+
+void AHeroController::Melee()
+{
+	AHero* HeroCharacter = GetPawn<AHero>();
+	if (IsValid(HeroCharacter))
+	{
+		HeroCharacter->Melee();
+	}
+}
+
+void AHeroController::Combo()
+{
+	AHero* HeroCharacter = GetPawn<AHero>();
+	if (IsValid(HeroCharacter))
+	{
+		HeroCharacter->Combo();
 	}
 }
 

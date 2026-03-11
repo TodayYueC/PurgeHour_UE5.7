@@ -8,4 +8,5 @@ enum class EHeroState : uint8
 {
 	EmptyHanded UMETA(DisplayName = "EmptyHanded"),
 	HoldingWeapon UMETA(DisplayName = "HoldingWeapon"),
+	HoldingSword UMETA(DisplayName = "HoldingSword"),
 };

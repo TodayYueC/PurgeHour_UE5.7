@@ -41,59 +41,56 @@ protected:
 	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category = "Weapon")
 	TObjectPtr<UWeaponData> WeaponDataAsset;
 	
-	// 子弹数量已迁移到GAS属性集，注释保留
-	// int32 CurrentBulletNum;
-	// int32 AllBulletNum;
+	// 旧后坐力变量，已迁移到 Hero::ApplyRecoil，注释保留
+	// int32 OffsetNum;
+	// float PendingRecoilPitch = 0.0f;
+	// float PendingRecoilYaw = 0.0f;
 	
-	int32 OffsetNum;
-	float PendingRecoilPitch = 0.0f;
-	float PendingRecoilYaw = 0.0f;
+	// UPROPERTY(BlueprintReadOnly,Category="Offset")
+	// float PitchOffset;
 	
-	UPROPERTY(BlueprintReadOnly,Category="Offset")
-	float PitchOffset;
-	
-	UPROPERTY(BlueprintReadOnly,Category="Offset")
-	float YawOffset;
+	// UPROPERTY(BlueprintReadOnly,Category="Offset")
+	// float YawOffset;
 	
 	// 拾取者
 	UPROPERTY(BlueprintReadOnly,Category = "Weapon")
 	TObjectPtr<AHero> WeaponOwner;
 	
-	//击中粒子特效
-	UPROPERTY(EditDefaultsOnly,Category="ParticleSystem")
-	TObjectPtr<UParticleSystem> DirtEffect;
+	// 击中粒子特效，已迁移到GC，注释保留
+	// UPROPERTY(EditDefaultsOnly,Category="ParticleSystem")
+	// TObjectPtr<UParticleSystem> DirtEffect;
 	
-	UPROPERTY(EditDefaultsOnly,Category="ParticleSystem")
-	TObjectPtr<UParticleSystem> GrassEffect;
+	// UPROPERTY(EditDefaultsOnly,Category="ParticleSystem")
+	// TObjectPtr<UParticleSystem> GrassEffect;
 	
-	UPROPERTY(EditDefaultsOnly,Category="ParticleSystem")
-	TObjectPtr<UParticleSystem> RockEffect;
+	// UPROPERTY(EditDefaultsOnly,Category="ParticleSystem")
+	// TObjectPtr<UParticleSystem> RockEffect;
 	
-	UPROPERTY(EditDefaultsOnly,Category="ParticleSystem")
-	TObjectPtr<UParticleSystem> MetalEffect;
+	// UPROPERTY(EditDefaultsOnly,Category="ParticleSystem")
+	// TObjectPtr<UParticleSystem> MetalEffect;
 	
-	UPROPERTY(EditDefaultsOnly,Category="ParticleSystem")
-	TObjectPtr<UParticleSystem> WoodEffect;
+	// UPROPERTY(EditDefaultsOnly,Category="ParticleSystem")
+	// TObjectPtr<UParticleSystem> WoodEffect;
 	
-	//击中音效
-	UPROPERTY(EditDefaultsOnly,Category="Sound")
-	TObjectPtr<USoundCue> DirtSound;
+	// 击中音效，已迁移到GC，注释保留
+	// UPROPERTY(EditDefaultsOnly,Category="Sound")
+	// TObjectPtr<USoundCue> DirtSound;
 	
-	UPROPERTY(EditDefaultsOnly,Category="Sound")
-	TObjectPtr<USoundCue> GrassSound;
+	// UPROPERTY(EditDefaultsOnly,Category="Sound")
+	// TObjectPtr<USoundCue> GrassSound;
 	
-	UPROPERTY(EditDefaultsOnly,Category="Sound")
-	TObjectPtr<USoundCue> RockSound;
+	// UPROPERTY(EditDefaultsOnly,Category="Sound")
+	// TObjectPtr<USoundCue> RockSound;
 	
-	UPROPERTY(EditDefaultsOnly,Category="Sound")
-	TObjectPtr<USoundCue> MetalSound;
+	// UPROPERTY(EditDefaultsOnly,Category="Sound")
+	// TObjectPtr<USoundCue> MetalSound;
 	
-	UPROPERTY(EditDefaultsOnly,Category="Sound")
-	TObjectPtr<USoundCue> WoodSound;
+	// UPROPERTY(EditDefaultsOnly,Category="Sound")
+	// TObjectPtr<USoundCue> WoodSound;
 	
-	//弹孔贴花
-	UPROPERTY(EditDefaultsOnly,Category="Decal")
-	TObjectPtr<UMaterialInterface> BulletDecalMaterial;
+	// 弹孔贴花，已迁移到GC，注释保留
+	// UPROPERTY(EditDefaultsOnly,Category="Decal")
+	// TObjectPtr<UMaterialInterface> BulletDecalMaterial;
 	
 
 
