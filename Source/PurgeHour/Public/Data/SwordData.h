@@ -53,9 +53,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Sword")
 	TArray<TObjectPtr<UAnimMontage>> Combo1;
 	
-	// //Combo2
-	// UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Sword")
-	// TArray<TObjectPtr<UAnimMontage>> Combo2;
+	//Combo2
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Sword")
+	TArray<TObjectPtr<UAnimMontage>> Combo2;
 	
 	//武器描述
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Sword")

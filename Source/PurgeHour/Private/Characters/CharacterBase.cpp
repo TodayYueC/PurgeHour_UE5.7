@@ -2,6 +2,8 @@
 
 
 #include "Characters/CharacterBase.h"
+#include "Components/MeshComponent.h"
+#include "TimerManager.h"
 
 // Sets default values
 ACharacterBase::ACharacterBase()

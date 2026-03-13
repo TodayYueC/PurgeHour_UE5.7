@@ -28,6 +28,7 @@ public:
 	
 	UFUNCTION(BLueprintCallable,Category="UniversalTool")
 	bool UniDoLineTrace(const FVector& StartLocation,const FRotator& StartRotation,float TraceDistance,FHitResult& HitResult,bool bDraw);
-	
+
+
 	
 };

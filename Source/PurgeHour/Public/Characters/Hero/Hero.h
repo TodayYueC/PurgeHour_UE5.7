@@ -14,6 +14,7 @@ class UWeaponData;
 class USpringArmComponent;
 class UCameraComponent;
 class UGameplayEffect;
+class UGameplayAbility;
 class UMotionWarpingComponent;
 
 /**
@@ -75,6 +76,13 @@ protected:
 	
 	UPROPERTY(VisibleAnywhere,BlueprintReadOnly, Category = "GA")
 	FGameplayAbilitySpecHandle GAComboHandle;
+
+	// 闪现/闪避技能：在编辑器里指定 GA 类即可
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GA")
+	TSubclassOf<UGameplayAbility> GADodgeClass;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GA")
+	FGameplayAbilitySpecHandle GADodgeHandle;
 public:
 	virtual void Tick(float DeltaTime) override;
 	//捡起武器相关
@@ -83,9 +91,21 @@ public:
 	void PickUpSword(ASwordBase* NewSword);
 	//状态相关
 	UFUNCTION(BlueprintCallable, Category = "Hero")
-	FORCEINLINE void SetCurrentHeroState(EHeroState NewState) { CurrentHeroState = NewState; }
+	void SetCurrentHeroState(EHeroState NewState);
 	UFUNCTION(BlueprintCallable, Category = "Hero")
 	FORCEINLINE EHeroState GetCurrentHeroState() { return CurrentHeroState; }
+
+	// 仅空手/持剑生效：切换为朝控制器或朝运动方向
+	UFUNCTION(BlueprintCallable, Category = "Hero|Camera")
+	void ToggleFacingMode();
+
+	// 查询当前实际朝向模式（持枪时始终返回 FaceController）
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Hero|Camera")
+	EHeroFacingMode GetCurrentFacingMode() const;
+
+	// 按移动方向相对视角判断：前/后/左/右（用于闪避）
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Hero|Movement")
+	EHeroMoveDirection GetMoveDirectionByView() const;
 	
 	//开火相关
 	// 是否正在开火（已整合到GA，不再经过武器判断）
@@ -97,6 +117,7 @@ public:
 	void Reload();
 	void Melee();
 	void Combo();
+	void Dodge();
 	UFUNCTION(BlueprintImplementableEvent,Category = "Hero")	
 	void AimFocusOpen();
 	UFUNCTION(BlueprintImplementableEvent,Category = "Hero")
@@ -137,6 +158,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	void UpdateWarpTarget();
 
+	// 尝试授予 Dodge 技能（ASC 就绪后调用）
+	void GrantDodgeAbility();
+
+	// 按当前状态应用朝向策略
+	void ApplyFacingModeByState();
+
 protected:
 	// ---- 后坐力内部状态 ----
 
@@ -167,6 +194,14 @@ protected:
 	/** 每秒恢复多少"发"的后坐力计数（建议 3~8，值越大恢复越快） */
 	UPROPERTY(EditDefaultsOnly, Category = "Recoil")
 	float RecoilRecoverySpeed = 8.f;
+
+	/** 速度低于该值时视为静止，返回 None */
+	UPROPERTY(EditDefaultsOnly, Category = "Hero|Movement")
+	float MoveDirectionMinSpeed = 5.f;
+
+	// 空手/持剑时是否朝控制器方向；false 为朝运动方向（默认）
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Hero|Camera")
+	bool bControllerFacingModeForMelee = false;
 	
 
 	

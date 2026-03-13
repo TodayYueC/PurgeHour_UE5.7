@@ -18,6 +18,8 @@
 #include "AbilitySystem/GA/BaseSwordGA.h"
 #include "MotionWarpingComponent.h"
 #include "Engine/Engine.h"
+#include "Characters/EnemyBase.h"
+#include "Math/RotationMatrix.h"
 
 AHero::AHero()
 {
@@ -36,10 +38,10 @@ AHero::AHero()
 	CameraComponent->SetupAttachment(SpringArmComponent, USpringArmComponent::SocketName);
 	CameraComponent->bUsePawnControlRotation = false; // 摄像机不随控制器旋转
 	
-	bUseControllerRotationYaw = true;
+	bUseControllerRotationYaw = false;
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationRoll = false;
-	GetCharacterMovement()->bOrientRotationToMovement = false;
+	GetCharacterMovement()->bOrientRotationToMovement = true;
 	//////////////////////////////操作手感优化//////////////////////////////////
 	JumpMaxHoldTime = 0.2f;
 	GetCharacterMovement()->GravityScale = 2.0f;
@@ -52,6 +54,7 @@ void AHero::BeginPlay()
 {
 	Super::BeginPlay();
 	CurrentHeroState = EHeroState::EmptyHanded;
+	ApplyFacingModeByState();
 	Init();
 }
 
@@ -129,10 +132,6 @@ void AHero::PickUpWeapon(AWeaponBase* NewWeapon)
 		NewWeapon->SetActorEnableCollision(false);
 		CurrentWeapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("WeaponSocket"));
 
-		// 持枪时朝视角方向旋转
-		bUseControllerRotationYaw = true;
-		GetCharacterMovement()->bOrientRotationToMovement = false;
-
 		UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
 		if (ASC && CurrentWeapon->GetGAFireClass())
 		{
@@ -162,10 +161,6 @@ void AHero::PickUpSword(ASwordBase* NewSword)
 	CurrentSword->AttachToComponent(GetMesh(),
 		FAttachmentTransformRules::SnapToTargetNotIncludingScale,
 		TEXT("SwordSocket"));
-
-	// 持剑时切换为朝运动方向旋转（第三人称近战风格）
-	bUseControllerRotationYaw = false;
-	GetCharacterMovement()->bOrientRotationToMovement = true;
 	
 	//GAS
 	FGameplayAbilitySpec AttackSpec(CurrentSword->GetGAAttackClass(), 1, -1, CurrentSword);
@@ -173,6 +168,51 @@ void AHero::PickUpSword(ASwordBase* NewSword)
 	
 	FGameplayAbilitySpec ComboSpec(CurrentSword->GetGAComboClass(), 1, -1, CurrentSword);
 	GAComboHandle = GetAbilitySystemComponent()->GiveAbility(ComboSpec);
+}
+
+void AHero::SetCurrentHeroState(EHeroState NewState)
+{
+	CurrentHeroState = NewState;
+	ApplyFacingModeByState();
+}
+
+void AHero::ToggleFacingMode()
+{
+	if (CurrentHeroState == EHeroState::HoldingWeapon)
+	{
+		return;
+	}
+
+	bControllerFacingModeForMelee = !bControllerFacingModeForMelee;
+	ApplyFacingModeByState();
+}
+
+void AHero::ApplyFacingModeByState()
+{
+	if (CurrentHeroState == EHeroState::HoldingWeapon)
+	{
+		// 持枪时始终朝控制器方向
+		bUseControllerRotationYaw = true;
+		GetCharacterMovement()->bOrientRotationToMovement = false;
+		return;
+	}
+
+	// 空手/持剑时根据切换模式决定
+	bUseControllerRotationYaw = bControllerFacingModeForMelee;
+	GetCharacterMovement()->bOrientRotationToMovement = !bControllerFacingModeForMelee;
+}
+
+EHeroFacingMode AHero::GetCurrentFacingMode() const
+{
+	// 持枪时强制朝控制器，忽略切换开关
+	if (CurrentHeroState == EHeroState::HoldingWeapon)
+	{
+		return EHeroFacingMode::FaceController;
+	}
+
+	return bControllerFacingModeForMelee
+		? EHeroFacingMode::FaceController
+		: EHeroFacingMode::OrientToMovement;
 }
 
 void AHero::Fire()
@@ -301,6 +341,12 @@ void AHero::UpdateWarpTarget()
 	
 	for (AActor* Actor : OutActors)
 	{
+		// 跳过已死亡的怪物
+		if (AEnemyBase* Enemy = Cast<AEnemyBase>(Actor))
+		{
+			if (Enemy->IsDead()) continue;
+		}
+
 		FVector DirectionToActor = (Actor->GetActorLocation() - MyLocation).GetSafeNormal();
 		
 		float DotProduct = FVector::DotProduct(MyDirection, DirectionToActor);
@@ -363,6 +409,7 @@ void AHero::PossessedBy(AController* NewController)
 	if (HeroPlayerState)
 	{
 		HeroPlayerState->GetAbilitySystemComponent()->InitAbilityActorInfo(HeroPlayerState, this);
+		GrantDodgeAbility();
 	}
 }
 
@@ -373,6 +420,7 @@ void AHero::OnRep_PlayerState()
 	if (HeroPlayerState)
 	{
 		HeroPlayerState->GetAbilitySystemComponent()->InitAbilityActorInfo(HeroPlayerState, this);
+		GrantDodgeAbility();
 	}
 }
 
@@ -407,5 +455,75 @@ void AHero::Combo()
 			GetAbilitySystemComponent()->TryActivateAbility(GAComboHandle);
 		}
 	}
+}
+
+void AHero::Dodge()
+{
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	if (!ASC)
+	{
+		return;
+	}
+
+	if (!GADodgeHandle.IsValid())
+	{
+		GrantDodgeAbility();
+	}
+
+	if (GADodgeHandle.IsValid())
+	{
+		ASC->TryActivateAbility(GADodgeHandle);
+	}
+}
+
+void AHero::GrantDodgeAbility()
+{
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	if (!ASC || !GADodgeClass)
+	{
+		return;
+	}
+
+	if (GADodgeHandle.IsValid() && ASC->FindAbilitySpecFromHandle(GADodgeHandle))
+	{
+		return;
+	}
+
+	FGameplayAbilitySpec DodgeSpec(GADodgeClass, 1, -1, this);
+	GADodgeHandle = ASC->GiveAbility(DodgeSpec);
+}
+
+EHeroMoveDirection AHero::GetMoveDirectionByView() const
+{
+	FVector HorizontalVelocity = GetVelocity();
+	HorizontalVelocity.Z = 0.f;
+
+	if (HorizontalVelocity.SizeSquared() < FMath::Square(MoveDirectionMinSpeed))
+	{
+		return EHeroMoveDirection::None;
+	}
+
+	const FVector MoveDir = HorizontalVelocity.GetSafeNormal();
+
+	FRotator ViewRotation = GetActorRotation();
+	if (Controller)
+	{
+		ViewRotation = Controller->GetControlRotation();
+	}
+	ViewRotation.Pitch = 0.f;
+	ViewRotation.Roll = 0.f;
+
+	const FVector ViewForward = FRotationMatrix(ViewRotation).GetUnitAxis(EAxis::X);
+	const FVector ViewRight = FRotationMatrix(ViewRotation).GetUnitAxis(EAxis::Y);
+	const float ForwardDot = FVector::DotProduct(MoveDir, ViewForward);
+	const float RightDot = FVector::DotProduct(MoveDir, ViewRight);
+
+
+	if (FMath::Abs(ForwardDot) >= FMath::Abs(RightDot))
+	{
+		return ForwardDot >= 0.f ? EHeroMoveDirection::Forward : EHeroMoveDirection::Backward;
+	}
+                                     
+	return RightDot >= 0.f ? EHeroMoveDirection::Right : EHeroMoveDirection::Left;
 }
 

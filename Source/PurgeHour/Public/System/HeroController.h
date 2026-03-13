@@ -36,6 +36,10 @@ public:
 	UInputAction* HeroMelee;
 	UPROPERTY(EditDefaultsOnly,Category="Input")
 	UInputAction* HeroCombo;
+	UPROPERTY(EditDefaultsOnly,Category="Input")
+	UInputAction* HeroDodge;
+	UPROPERTY(EditDefaultsOnly,Category="Input")
+	UInputAction* HeroToggleFacingMode;
 
 protected:
 	virtual void BeginPlay() override;
@@ -52,5 +56,7 @@ protected:
 	void Reload();
 	void Melee();
 	void Combo();
+	void Dodge();
+	void ToggleFacingMode();
 	
 };

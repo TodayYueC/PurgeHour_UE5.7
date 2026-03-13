@@ -54,6 +54,14 @@ void AHeroController::SetupInputComponent()
 		{
 			EnhancedInputComponent->BindAction(HeroCombo, ETriggerEvent::Started, this, &AHeroController::Combo);
 		}
+		if (HeroDodge)
+		{
+			EnhancedInputComponent->BindAction(HeroDodge, ETriggerEvent::Started, this, &AHeroController::Dodge);
+		}
+		if (HeroToggleFacingMode)
+		{
+			EnhancedInputComponent->BindAction(HeroToggleFacingMode, ETriggerEvent::Started, this, &AHeroController::ToggleFacingMode);
+		}
 	}
 }
 
@@ -153,6 +161,24 @@ void AHeroController::Combo()
 	if (IsValid(HeroCharacter))
 	{
 		HeroCharacter->Combo();
+	}
+}
+
+void AHeroController::Dodge()
+{
+	AHero* HeroCharacter = GetPawn<AHero>();
+	if (IsValid(HeroCharacter))
+	{
+		HeroCharacter->Dodge();
+	}
+}
+
+void AHeroController::ToggleFacingMode()
+{
+	AHero* HeroCharacter = GetPawn<AHero>();
+	if (IsValid(HeroCharacter))
+	{
+		HeroCharacter->ToggleFacingMode();
 	}
 }
 
