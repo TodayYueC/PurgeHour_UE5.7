@@ -263,9 +263,9 @@
 - 方案：在 `AHeroPlayerState::BindAttributeCallbacks()` 统一订阅 `FOnAttributeChangeData`，将 Health/Ammo/ReserveAmmo/WeaponName 全部收敛为 PlayerState 广播中枢；Widget 构造时先绑定再读取快照，完成“实时事件 + 初始值”双通道同步。
 - 结果：属性驱动 UI 的一致性从“尽力而为”升级为“确定性更新”，支持多人联机下稳定展示。
 
-### 7.4 难点：事件驱动连招与 SetByCaller 结算的原子性
+### 7.4 难点：事件驱动连招与 SetByCaller 结算
 - 问题：连招若靠 Tick 轮询窗口，输入与动画窗口容易错拍；换弹若分步修改多个属性，易出现弹夹/备弹短暂不一致。
-- 方案：连招采用 GameplayEvent（`Input.Combo`）驱动 GA 状态推进，避免轮询；换弹在 `UBaseWeaponGA::CalculateReload()` 中计算后通过 SetByCaller 一次性注入 GE，原子更新 Ammo 与 ReserveAmmo。
+- 方案：连招采用 GameplayEvent（`Input.Combo`）驱动 GA 状态推进，避免轮询；换弹在 `UBaseWeaponGA::CalculateReload()` 中计算后通过 SetByCaller 一次性注入 GE，更新 Ammo 与 ReserveAmmo。
 - 结果：输入响应与技能状态机更紧密，弹药结算具备事务性，复杂战斗节奏下仍保持数据正确性。
 
 
