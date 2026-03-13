@@ -5,6 +5,7 @@
 > 语言：C++17 + Blueprints  
 > 核心框架：Gameplay Ability System (GAS)
 
+
 ---
 
 ## 1）项目定位
@@ -81,7 +82,7 @@
 
 ## 4）核心模块深度解析
 
-## 4.1 技能与战斗系统（GAS 中心化）
+### 4.1 技能与战斗系统（GAS 中心化）
 
 ### C++ 职责
 - GA 基类抽象：
@@ -108,7 +109,7 @@
 
 ---
 
-## 4.2 输入系统与连招判定
+### 4.2 输入系统与连招判定
 
 ### 输入绑定模型
 - `AHeroController::SetupInputComponent()` 一次性绑定 Enhanced Input。
@@ -129,7 +130,7 @@
 
 ---
 
-## 4.3 网络同步与 UI 同步（PlayerState 枢纽化）
+### 4.3 网络同步与 UI 同步（PlayerState 枢纽化）
 
 ### 所有权策略
 - `AHeroPlayerState` 持有 ASC 与 AttributeSet。
@@ -150,7 +151,7 @@
 
 ---
 
-## 4.4 后坐力系统（手感与维护性的折中）
+### 4.4 后坐力系统（手感与维护性的折中）
 
 ### 当前实现
 - 在 `AHero::Tick()` 中按时间窗消费 Pending Pitch/Yaw（`RecoilApplyTime`）。
@@ -170,7 +171,7 @@
 
 ---
 
-## 4.5 视角模式与战斗状态耦合
+### 4.5 视角模式与战斗状态耦合
 
 ### 需求
 - 空手/持剑：可切换“随移动朝向”与“始终朝向控制器”。
@@ -183,7 +184,7 @@
 
 ---
 
-## 4.6 敌人 GAS 与死亡管线
+### 4.6 敌人 GAS 与死亡管线
 
 ### 敌人初始化
 - `AEnemyBase` 创建 `UEnemyASC` 与 `UEnemyAttributeSet`。
@@ -204,14 +205,14 @@
 
 ## 5）数据驱动设计
 
-## 5.1 枪械 DataAsset（`UWeaponData`）
+### 5.1 枪械 DataAsset（`UWeaponData`）
 - 网格资源
 - 射速与伤害
 - 弹药容量元数据
 - 后坐力参数
 - 图标与文本说明
 
-## 5.2 剑 DataAsset（`USwordData`）
+### 5.2 剑 DataAsset（`USwordData`）
 - 静态网格
 - 近战伤害
 - 连招蒙太奇数组
@@ -225,42 +226,49 @@
 
 ## 6）性能优化与工程质量
 
-## 6.1 Tick 预算控制
+### 6.1 Tick 预算控制
 - `ACharacterBase` 与武器 Actor 默认关闭 Tick。
 - 仅在必要场景开启（如 `AHero` 后坐力与恢复）。
 
-## 6.2 避免蓝图 Tick 承载高频逻辑
+### 6.2 避免蓝图 Tick 承载高频逻辑
 - 状态门控、后坐力累计、换弹计算、属性校验放在 C++。
 - 蓝图专注事件响应与表现层。
 
-## 6.3 内存与生命周期安全
+### 6.3 内存与生命周期安全
 - UObject 引用使用 `TObjectPtr`。
 - ASC/AttributeSet/Owner 使用前做空指针保护。
 - 死亡态与碰撞关闭避免 PendingKill 访问风险。
 
-## 6.4 编译/运行期稳定性经验
+### 6.4 编译/运行期稳定性经验
 - 属性变化回调签名与委托严格一致（`FOnAttributeChangeData`）。
 - 头文件声明与实现保持完全匹配。
 - Overlap/Pickup 流程中先做有效性检查再转换与广播。
 
 ---
 
-## 7）技术难点与解决方案（面试叙事）
+## 7）技术难点与解决方案
 
-## 7.1 难点：开火链路分散（武器计时器 + 角色输入 + 蓝图表现）
-- 问题：中断与状态一致性难维护。
-- 方案：开火统一迁移到 GA 管线，武器类退化为数据与拾取载体。
-- 结果：生命周期更清晰，联机扩展性更好。
+### 7.1 难点：GAS Owner/Avatar 生命周期一致性（联机高难点）
+- 问题：ASC 挂载在 `PlayerState` 时，若仅在单一入口初始化 ActorInfo，会出现客户端能力上下文缺失、标签状态不同步、激活失败等时序问题。
+- 方案：在 `AHero::PossessedBy()`（服务端）与 `AHero::OnRep_PlayerState()`（客户端）双路径执行 `InitAbilityActorInfo(Owner=PlayerState, Avatar=Hero)`，并保持 ASC 来源统一为 `AHeroPlayerState`。
+- 结果：能力上下文初始化具备幂等与时序容错能力，联机场景下技能激活稳定性显著提升。
 
-## 7.2 难点：架构迁移后 UI 数值不同步
-- 问题：旧广播通道与 GAS 属性更新脱节。
-- 方案：以 `AHeroPlayerState` 为广播中枢，属性变化事件直达 UI。
-- 结果：UI 与属性更新保持确定性一致。
+### 7.2 难点：Ability 授予/激活/取消的句柄生命周期管理
+- 问题：武器与剑属于动态装备，若能力句柄管理不严格，会出现重复授予、悬空句柄、停火失败或异常重入。
+- 方案：以 `FGameplayAbilitySpecHandle` 为唯一运行时标识，在拾取时集中 `GiveAbility`，输入阶段仅通过 Handle `TryActivateAbility`，停火场景显式 `CancelAbilityHandle`，并在状态门控（`EHeroState`）中限制可激活域。
+- 结果：能力生命周期与装备生命周期解耦但可追踪，避免“输入状态与能力状态错位”的高频线上问题。
 
-## 7.3 难点：近战索敌包含死亡目标并造成阻挡
-- 问题：死亡目标仍参与 MotionWarp 与碰撞。
-- 方案：死亡状态门控 + 碰撞关闭 + Warp 目标过滤。
-- 结果：连招锁定稳定，角色移动不再被尸体阻挡。
+### 7.3 难点：属性复制一致性到 UI 的闭环同步
+- 问题：GAS 属性更新发生在网络复制链路中，若 UI 直接依赖零散事件，容易出现开局未刷新、局部更新丢失、客户端显示滞后。
+- 方案：在 `AHeroPlayerState::BindAttributeCallbacks()` 统一订阅 `FOnAttributeChangeData`，将 Health/Ammo/ReserveAmmo/WeaponName 全部收敛为 PlayerState 广播中枢；Widget 构造时先绑定再读取快照，完成“实时事件 + 初始值”双通道同步。
+- 结果：属性驱动 UI 的一致性从“尽力而为”升级为“确定性更新”，支持多人联机下稳定展示。
+
+### 7.4 难点：事件驱动连招与 SetByCaller 结算的原子性
+- 问题：连招若靠 Tick 轮询窗口，输入与动画窗口容易错拍；换弹若分步修改多个属性，易出现弹夹/备弹短暂不一致。
+- 方案：连招采用 GameplayEvent（`Input.Combo`）驱动 GA 状态推进，避免轮询；换弹在 `UBaseWeaponGA::CalculateReload()` 中计算后通过 SetByCaller 一次性注入 GE，原子更新 Ammo 与 ReserveAmmo。
+- 结果：输入响应与技能状态机更紧密，弹药结算具备事务性，复杂战斗节奏下仍保持数据正确性。
+
+
 
 ---
 
@@ -280,7 +288,8 @@
 
 ---
 
-## 9）~~~~文件索引
+<a id="code-index"></a>
+## 9）代码走查文件索引
 
 - 角色核心：`Source/PurgeHour/Public/Characters/Hero/Hero.h`，`Source/PurgeHour/Private/Characters/Hero/Hero.cpp`
 - 输入路由：`Source/PurgeHour/Public/System/HeroController.h`，`Source/PurgeHour/Private/System/HeroController.cpp`
@@ -290,3 +299,7 @@
 - 剑系统：`Source/PurgeHour/Public/Weapon/SwordBase.h`，`Source/PurgeHour/Private/Weapon/SwordBase.cpp`
 - 敌人 GAS：`Source/PurgeHour/Public/Characters/EnemyBase.h`，`Source/PurgeHour/Private/Characters/EnemyBase.cpp`
 - 构建依赖：`Source/PurgeHour/PurgeHour.Build.cs`
+
+---
+
+<a id="oral"></a>
