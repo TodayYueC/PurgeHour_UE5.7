@@ -46,4 +46,6 @@ protected:
 	void UpdateHealth(float NewHealth);
 	UFUNCTION()
 	void UpdateMaxHealth(float NewMaxHealth);
+
+	void RefreshAmmoVisibility();
 };

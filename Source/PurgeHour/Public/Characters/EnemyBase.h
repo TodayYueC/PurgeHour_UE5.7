@@ -62,6 +62,8 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Enemy")
 	bool bIsDead = false;
 
-private:
+	
 	void ApplyInitGE();
+private:
+	
 };

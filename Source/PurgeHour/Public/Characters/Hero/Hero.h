@@ -83,6 +83,30 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GA")
 	FGameplayAbilitySpecHandle GADodgeHandle;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GA")
+	TSubclassOf<UGameplayAbility> GASwitchWeaponClass;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GA")
+	FGameplayAbilitySpecHandle GASwitchWeaponHandle;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GA")
+	TSubclassOf<UGameplayAbility> GAHolsterWeaponClass;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GA")
+	FGameplayAbilitySpecHandle GAHolsterWeaponHandle;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Hero|Socket")
+	FName GunHandSocketName = TEXT("WeaponSocket");
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Hero|Socket")
+	FName SwordHandSocketName = TEXT("SwordSocket");
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Hero|Socket")
+	FName GunEquipSocketName = TEXT("GunEquip");
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Hero|Socket")
+	FName SwordEquipSocketName = TEXT("SwordEquip");
 public:
 	virtual void Tick(float DeltaTime) override;
 	//捡起武器相关
@@ -115,9 +139,17 @@ public:
 	void Fire();
 	void StopFire();
 	void Reload();
+	void SwitchWeapon();
+	void HolsterWeapon();
 	void Melee();
 	void Combo();
 	void Dodge();
+
+	UFUNCTION(BlueprintCallable, Category = "Hero|Weapon")
+	void HolsterCurrentWeapon();
+
+	UFUNCTION(BlueprintCallable, Category = "Hero|Weapon")
+	void DrawCurrentWeapon();
 	UFUNCTION(BlueprintImplementableEvent,Category = "Hero")	
 	void AimFocusOpen();
 	UFUNCTION(BlueprintImplementableEvent,Category = "Hero")
@@ -160,9 +192,12 @@ public:
 
 	// 尝试授予 Dodge 技能（ASC 就绪后调用）
 	void GrantDodgeAbility();
+	void GrantSwitchWeaponAbility();
+	void GrantHolsterWeaponAbility();
 
 	// 按当前状态应用朝向策略
 	void ApplyFacingModeByState();
+	void RefreshCombatUI();
 
 protected:
 	// ---- 后坐力内部状态 ----

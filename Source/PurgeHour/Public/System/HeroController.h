@@ -40,6 +40,10 @@ public:
 	UInputAction* HeroDodge;
 	UPROPERTY(EditDefaultsOnly,Category="Input")
 	UInputAction* HeroToggleFacingMode;
+	UPROPERTY(EditDefaultsOnly,Category="Input")
+	UInputAction* HeroSwitchWeapon;
+	UPROPERTY(EditDefaultsOnly,Category="Input")
+	UInputAction* HeroHolsterWeapon;
 
 protected:
 	virtual void BeginPlay() override;
@@ -58,5 +62,7 @@ protected:
 	void Combo();
 	void Dodge();
 	void ToggleFacingMode();
+	void SwitchWeapon();
+	void HolsterWeapon();
 	
 };

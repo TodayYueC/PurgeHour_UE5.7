@@ -62,6 +62,14 @@ void AHeroController::SetupInputComponent()
 		{
 			EnhancedInputComponent->BindAction(HeroToggleFacingMode, ETriggerEvent::Started, this, &AHeroController::ToggleFacingMode);
 		}
+		if (HeroSwitchWeapon)
+		{
+			EnhancedInputComponent->BindAction(HeroSwitchWeapon, ETriggerEvent::Started, this, &AHeroController::SwitchWeapon);
+		}
+		if (HeroHolsterWeapon)
+		{
+			EnhancedInputComponent->BindAction(HeroHolsterWeapon, ETriggerEvent::Started, this, &AHeroController::HolsterWeapon);
+		}
 	}
 }
 
@@ -179,6 +187,24 @@ void AHeroController::ToggleFacingMode()
 	if (IsValid(HeroCharacter))
 	{
 		HeroCharacter->ToggleFacingMode();
+	}
+}
+
+void AHeroController::SwitchWeapon()
+{
+	AHero* HeroCharacter = GetPawn<AHero>();
+	if (IsValid(HeroCharacter))
+	{
+		HeroCharacter->SwitchWeapon();
+	}
+}
+
+void AHeroController::HolsterWeapon()
+{
+	AHero* HeroCharacter = GetPawn<AHero>();
+	if (IsValid(HeroCharacter))
+	{
+		HeroCharacter->HolsterWeapon();
 	}
 }
 

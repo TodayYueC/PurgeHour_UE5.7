@@ -10,7 +10,10 @@
 #include "Sound/SoundCue.h"
 #include "Weapon/WeaponBase.h"
 #include "Weapon/SwordBase.h"
+#include "Data/WeaponData.h"
+#include "Data/SwordData.h"
 #include "AbilitySystem/HeroYueASC.h"
+#include "AbilitySystem/HeroAttributeSet.h"
 #include "System/HeroPlayerState.h"
 #include "AbilitySystemComponent.h"
 #include "GameplayEffectTypes.h"
@@ -55,6 +58,7 @@ void AHero::BeginPlay()
 	Super::BeginPlay();
 	CurrentHeroState = EHeroState::EmptyHanded;
 	ApplyFacingModeByState();
+	RefreshCombatUI();
 	Init();
 }
 
@@ -125,55 +129,131 @@ void AHero::Tick(float DeltaTime)
 
 void AHero::PickUpWeapon(AWeaponBase* NewWeapon)
 {
-	if (NewWeapon)
-	{
-		CurrentWeapon = NewWeapon;
-		SetCurrentHeroState(EHeroState::HoldingWeapon);
-		NewWeapon->SetActorEnableCollision(false);
-		CurrentWeapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("WeaponSocket"));
+	if (!NewWeapon) return;
 
-		UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
-		if (ASC && CurrentWeapon->GetGAFireClass())
+	const bool bHandOccupied = CurrentHeroState != EHeroState::EmptyHanded;
+	CurrentWeapon = NewWeapon;
+	CurrentWeapon->SetActorEnableCollision(false);
+
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	if (ASC)
+	{
+		if (GAFireHandle.IsValid())
+		{
+			ASC->ClearAbility(GAFireHandle);
+			GAFireHandle = FGameplayAbilitySpecHandle();
+		}
+		if (GAReloadHandle.IsValid())
+		{
+			ASC->ClearAbility(GAReloadHandle);
+			GAReloadHandle = FGameplayAbilitySpecHandle();
+		}
+
+		if (CurrentWeapon->GetGAFireClass())
 		{
 			FGameplayAbilitySpec FireSpec(CurrentWeapon->GetGAFireClass(), 1, -1, CurrentWeapon);
 			FireSpec.GetDynamicSpecSourceTags().AddTag(FGameplayTag::RequestGameplayTag(FName("Weapon.Fire")));
 			GAFireHandle = ASC->GiveAbility(FireSpec);
 		}
-		if (ASC && CurrentWeapon->GetGAReloadClass())
+		if (CurrentWeapon->GetGAReloadClass())
 		{
 			FGameplayAbilitySpec ReloadSpec(CurrentWeapon->GetGAReloadClass(), 1, -1, CurrentWeapon);
 			GAReloadHandle = ASC->GiveAbility(ReloadSpec);
 		}
+	}
+
+	CurrentWeapon->AttachToComponent(
+		GetMesh(),
+		FAttachmentTransformRules::SnapToTargetNotIncludingScale,
+		bHandOccupied ? GunEquipSocketName : GunHandSocketName);
+
+	if (!bHandOccupied)
+	{
+		SetCurrentHeroState(EHeroState::HoldingWeapon);
 	}
 }
 
 void AHero::PickUpSword(ASwordBase* NewSword)
 {
 	if (!NewSword) return;
+	const bool bHandOccupied = CurrentHeroState != EHeroState::EmptyHanded;
 
 	CurrentSword = NewSword;
-	SetCurrentHeroState(EHeroState::HoldingSword);
+	CurrentSword->SetActorEnableCollision(false);
 
-	// 禁用碰撞，防止再次触发重叠
-	NewSword->SetActorEnableCollision(false);
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	if (ASC)
+	{
+		if (GAAttackHandle.IsValid())
+		{
+			ASC->ClearAbility(GAAttackHandle);
+			GAAttackHandle = FGameplayAbilitySpecHandle();
+		}
+		if (GAComboHandle.IsValid())
+		{
+			ASC->ClearAbility(GAComboHandle);
+			GAComboHandle = FGameplayAbilitySpecHandle();
+		}
 
-	// 吸附到 Sword 插槽
-	CurrentSword->AttachToComponent(GetMesh(),
+		if (CurrentSword->GetGAAttackClass())
+		{
+			FGameplayAbilitySpec AttackSpec(CurrentSword->GetGAAttackClass(), 1, -1, CurrentSword);
+			GAAttackHandle = ASC->GiveAbility(AttackSpec);
+		}
+
+		if (CurrentSword->GetGAComboClass())
+		{
+			FGameplayAbilitySpec ComboSpec(CurrentSword->GetGAComboClass(), 1, -1, CurrentSword);
+			GAComboHandle = ASC->GiveAbility(ComboSpec);
+		}
+	}
+
+	CurrentSword->AttachToComponent(
+		GetMesh(),
 		FAttachmentTransformRules::SnapToTargetNotIncludingScale,
-		TEXT("SwordSocket"));
-	
-	//GAS
-	FGameplayAbilitySpec AttackSpec(CurrentSword->GetGAAttackClass(), 1, -1, CurrentSword);
-	GAAttackHandle = GetAbilitySystemComponent()->GiveAbility(AttackSpec);
-	
-	FGameplayAbilitySpec ComboSpec(CurrentSword->GetGAComboClass(), 1, -1, CurrentSword);
-	GAComboHandle = GetAbilitySystemComponent()->GiveAbility(ComboSpec);
+		bHandOccupied ? SwordEquipSocketName : SwordHandSocketName);
+
+	if (!bHandOccupied)
+	{
+		SetCurrentHeroState(EHeroState::HoldingSword);
+	}
 }
 
 void AHero::SetCurrentHeroState(EHeroState NewState)
 {
 	CurrentHeroState = NewState;
 	ApplyFacingModeByState();
+	RefreshCombatUI();
+}
+
+void AHero::RefreshCombatUI()
+{
+	AHeroPlayerState* HeroPlayerState = GetPlayerState<AHeroPlayerState>();
+	if (!HeroPlayerState)
+	{
+		return;
+	}
+
+	if (CurrentHeroState == EHeroState::HoldingWeapon && CurrentWeapon)
+	{
+		if (const UWeaponData* WeaponData = CurrentWeapon->GetWeaponDataAsset())
+		{
+			HeroPlayerState->BroadcastWeaponName(WeaponData->WeaponDisplayName);
+		}
+		HeroPlayerState->BroadcastAmmo();
+		return;
+	}
+
+	if (CurrentHeroState == EHeroState::HoldingSword && CurrentSword)
+	{
+		if (const USwordData* SwordData = CurrentSword->GetSwordDataAsset())
+		{
+			HeroPlayerState->BroadcastWeaponName(SwordData->SwordDisplayName);
+			return;
+		}
+	}
+
+	HeroPlayerState->BroadcastWeaponName(FText::FromString(TEXT("未装配武器")));
 }
 
 void AHero::ToggleFacingMode()
@@ -243,10 +323,126 @@ void AHero::Fire()
 void AHero::Reload()
 {
 	if (CurrentHeroState != EHeroState::HoldingWeapon || !CurrentWeapon) return;
+
+	if (const AHeroPlayerState* HeroPlayerState = GetPlayerState<AHeroPlayerState>())
+	{
+		if (const UHeroAttributeSet* AttributeSet = HeroPlayerState->GetAttributeSet())
+		{
+			const int32 CurrentAmmo = static_cast<int32>(AttributeSet->GetAmmo());
+			const int32 MaxAmmo = static_cast<int32>(AttributeSet->GetMaxAmmo());
+			if (CurrentAmmo >= MaxAmmo)
+			{
+				return;
+			}
+		}
+	}
 	
 	if (GetAbilitySystemComponent() && GAReloadHandle.IsValid())
 	{
 		GetAbilitySystemComponent()->TryActivateAbility(GAReloadHandle);
+	}
+}
+
+void AHero::SwitchWeapon()
+{
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	if (ASC)
+	{
+		if (!GASwitchWeaponHandle.IsValid())
+		{
+			GrantSwitchWeaponAbility();
+		}
+
+		if (GASwitchWeaponHandle.IsValid())
+		{
+			ASC->TryActivateAbility(GASwitchWeaponHandle);
+			return;
+		}
+	}
+
+	// 未配置GA时备用
+	if (CurrentHeroState == EHeroState::HoldingWeapon && CurrentSword)
+	{
+		HolsterCurrentWeapon();
+		CurrentSword->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, SwordHandSocketName);
+		SetCurrentHeroState(EHeroState::HoldingSword);
+		return;
+	}
+
+	if (CurrentHeroState == EHeroState::HoldingSword && CurrentWeapon)
+	{
+		HolsterCurrentWeapon();
+		CurrentWeapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, GunHandSocketName);
+		SetCurrentHeroState(EHeroState::HoldingWeapon);
+		return;
+	}
+
+	if (CurrentHeroState == EHeroState::EmptyHanded)
+	{
+		DrawCurrentWeapon();
+	}
+}
+
+void AHero::HolsterWeapon()
+{
+	if (CurrentHeroState == EHeroState::EmptyHanded)
+	{
+		DrawCurrentWeapon();
+		return;
+	}
+
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	if (ASC)
+	{
+		if (!GAHolsterWeaponHandle.IsValid())
+		{
+			GrantHolsterWeaponAbility();
+		}
+
+		if (GAHolsterWeaponHandle.IsValid())
+		{
+			ASC->TryActivateAbility(GAHolsterWeaponHandle);
+			return;
+		}
+	}
+
+	HolsterCurrentWeapon();
+}
+
+void AHero::HolsterCurrentWeapon()
+{
+	if (CurrentHeroState == EHeroState::HoldingWeapon && CurrentWeapon)
+	{
+		CurrentWeapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, GunEquipSocketName);
+		SetCurrentHeroState(EHeroState::EmptyHanded);
+		return;
+	}
+
+	if (CurrentHeroState == EHeroState::HoldingSword && CurrentSword)
+	{
+		CurrentSword->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, SwordEquipSocketName);
+		SetCurrentHeroState(EHeroState::EmptyHanded);
+	}
+}
+
+void AHero::DrawCurrentWeapon()
+{
+	if (CurrentHeroState != EHeroState::EmptyHanded)
+	{
+		return;
+	}
+
+	if (CurrentWeapon)
+	{
+		CurrentWeapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, GunHandSocketName);
+		SetCurrentHeroState(EHeroState::HoldingWeapon);
+		return;
+	}
+
+	if (CurrentSword)
+	{
+		CurrentSword->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, SwordHandSocketName);
+		SetCurrentHeroState(EHeroState::HoldingSword);
 	}
 }
 
@@ -410,6 +606,8 @@ void AHero::PossessedBy(AController* NewController)
 	{
 		HeroPlayerState->GetAbilitySystemComponent()->InitAbilityActorInfo(HeroPlayerState, this);
 		GrantDodgeAbility();
+		GrantSwitchWeaponAbility();
+		GrantHolsterWeaponAbility();
 	}
 }
 
@@ -421,6 +619,8 @@ void AHero::OnRep_PlayerState()
 	{
 		HeroPlayerState->GetAbilitySystemComponent()->InitAbilityActorInfo(HeroPlayerState, this);
 		GrantDodgeAbility();
+		GrantSwitchWeaponAbility();
+		GrantHolsterWeaponAbility();
 	}
 }
 
@@ -491,6 +691,40 @@ void AHero::GrantDodgeAbility()
 
 	FGameplayAbilitySpec DodgeSpec(GADodgeClass, 1, -1, this);
 	GADodgeHandle = ASC->GiveAbility(DodgeSpec);
+}
+
+void AHero::GrantSwitchWeaponAbility()
+{
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	if (!ASC || !GASwitchWeaponClass)
+	{
+		return;
+	}
+
+	if (GASwitchWeaponHandle.IsValid() && ASC->FindAbilitySpecFromHandle(GASwitchWeaponHandle))
+	{
+		return;
+	}
+
+	FGameplayAbilitySpec Spec(GASwitchWeaponClass, 1, -1, this);
+	GASwitchWeaponHandle = ASC->GiveAbility(Spec);
+}
+
+void AHero::GrantHolsterWeaponAbility()
+{
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	if (!ASC || !GAHolsterWeaponClass)
+	{
+		return;
+	}
+
+	if (GAHolsterWeaponHandle.IsValid() && ASC->FindAbilitySpecFromHandle(GAHolsterWeaponHandle))
+	{
+		return;
+	}
+
+	FGameplayAbilitySpec Spec(GAHolsterWeaponClass, 1, -1, this);
+	GAHolsterWeaponHandle = ASC->GiveAbility(Spec);
 }
 
 EHeroMoveDirection AHero::GetMoveDirectionByView() const

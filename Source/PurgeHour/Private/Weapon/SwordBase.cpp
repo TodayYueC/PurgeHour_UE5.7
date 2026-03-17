@@ -2,10 +2,10 @@
 
 #include "Weapon/SwordBase.h"
 
+#include "MeshPaintVisualize.h"
 #include "Components/SphereComponent.h"
 #include "Data/SwordData.h"
 #include "Characters/Hero/Hero.h"
-#include "System/HeroPlayerState.h"
 
 // Sets default values
 ASwordBase::ASwordBase()
@@ -35,7 +35,7 @@ ASwordBase::ASwordBase()
 void ASwordBase::BeginPlay()
 {
 	Super::BeginPlay();
-
+	PickupCollision->SetCollisionProfileName("OverlapAllDynamic") ;
 	// 强制在运行时设置碰撞（防止蓝图子类缓存旧值覆盖 C++ 默认值）
 	// if (PickupCollision)
 	// {
@@ -60,6 +60,7 @@ void ASwordBase::OnConstruction(const FTransform& Transform)
 void ASwordBase::OnPickupBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("SwordBase::OnPickupBeginOverlap called"));
 	if (!OtherActor || OtherActor == this) return;
 
 	SwordOwner = Cast<AHero>(OtherActor);
@@ -67,14 +68,6 @@ void ASwordBase::OnPickupBeginOverlap(UPrimitiveComponent* OverlappedComp, AActo
 	{
 		SwordOwner->PickUpSword(this);
 
-		// 广播剑名到 UI（与 WeaponBase 保持一致）
-		if (SwordDataAsset)
-		{
-			if (AHeroPlayerState* PS = SwordOwner->GetPlayerState<AHeroPlayerState>())
-			{
-				PS->BroadcastWeaponName(SwordDataAsset->SwordDisplayName);
-			}
-		}
 
 		PickupCollision->DestroyComponent();
 	}

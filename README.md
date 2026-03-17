@@ -78,6 +78,18 @@
     - 授予近战/连招 GA。
 3. 连招输入在 GA 活跃时转为 GameplayEvent（`Input.Combo`），避免重复激活。
 
+### 3.4 怪物 AI：感知 -> 行为树 -> 攻击
+1. `AEnemyAIController` 在 `BeginPlay()` 绑定 `OnTargetPerceptionUpdated` 并运行 `BehaviorTree`。
+2. 感知到玩家时：
+    - 通过 `IsPlayerTarget()` 过滤目标（`AHero` 类型/Tag/首个玩家 Pawn）。
+    - 将黑板键 `TargetActor` 设为玩家。
+3. 丢失玩家时：
+    - 仅当当前黑板目标等于该玩家，才清除 `TargetActor`，避免误清其他目标。
+4. 行为树任务：
+    - `UBTTask_RandomLocation`：在导航网格内采样随机点并写入黑板位置键（巡逻/游走）。
+    - `UBTTask_Attack`：获取 `AEnemyBase1` 并调用 `Attack()`，由 GAS 攻击 GA 执行实际攻击。
+5. `AEnemyBase1::Attack()` 触发 `AttackGA`，命中窗口由 `SetCollisionActive()` 控制，`OnAttackOverlapBegin()` 对玩家去重伤害。
+
 ---
 
 ## 4）核心模块深度解析
@@ -203,6 +215,35 @@
 
 ---
 
+### 4.7 新增怪物 AI 与行为树实现细节
+
+### AI 控制器职责（`AEnemyAIController`）
+- 集中管理视觉感知与目标更新：
+    - 视野半径：`SightRadius=2000`，丢失半径：`LoseSightRadius=2500`，视角：`90` 度。
+    - `OnTargetPerceptionUpdated` 回调里只处理玩家目标，避免环境 Actor 污染黑板。
+- 运行行为树资产：
+    - 在控制器 `BeginPlay` 执行 `RunBehaviorTree(BehaviorTree)`。
+    - 将“是否有目标”交给黑板键 `TargetActor` 驱动 BT 分支。
+
+### 行为树逻辑（BT 侧）
+- 追击分支：当 `TargetActor` 有效，执行 MoveTo 追击，并在攻击距离内触发 `BTTask_Attack`。
+- 游走分支：当 `TargetActor` 为空，执行 `BTTask_RandomLocation` 产出随机点后 MoveTo（巡逻）。
+- 攻击分支：`BTTask_Attack` 调 `AEnemyBase1::Attack()`，攻击动画/伤害窗口由 GA + 碰撞通知协同完成。
+
+### 新增怪物（`AEnemyBase1`）战斗闭环
+- `BeginPlay` 时授予 `AttackGA`，运行期通过 `AttackGAHandle` 激活能力。
+- 攻击命中判定在 `AttackCollision`：
+    - 攻击开始时 `SetCollisionActive(true)` 开启查询碰撞并清空命中集合。
+    - 重叠回调使用 `HitVictims` 去重，确保单次攻击不会重复伤害同一目标。
+    - 攻击结束时 `SetCollisionActive(false)` 关闭碰撞并回收状态。
+
+### 架构价值
+- 感知、决策、执行拆层清晰：Perception（发现）-> Blackboard/BT（决策）-> GA（执行）。
+- 能与现有 GAS 统一：怪物攻击与玩家技能共享能力系统生命周期与网络语义。
+- 后续扩展成本低：新增怪物可复用控制器与 BT Task，仅替换 Data/GA/动画配置。
+
+---
+
 ## 5）数据驱动设计
 
 ### 5.1 枪械 DataAsset（`UWeaponData`）
@@ -298,6 +339,9 @@
 - 枪械系统：`Source/PurgeHour/Public/Weapon/WeaponBase.h`，`Source/PurgeHour/Private/Weapon/WeaponBase.cpp`
 - 剑系统：`Source/PurgeHour/Public/Weapon/SwordBase.h`，`Source/PurgeHour/Private/Weapon/SwordBase.cpp`
 - 敌人 GAS：`Source/PurgeHour/Public/Characters/EnemyBase.h`，`Source/PurgeHour/Private/Characters/EnemyBase.cpp`
+- ~~~~怪物：`Source/PurgeHour/Public/Characters/Enemy/EnemyBase1.h`，`Source/PurgeHour/Private/Characters/Enemy/EnemyBase1.cpp`
+- 怪物 AI 控制器：`Source/PurgeHour/Public/System/EnemyAIController.h`，`Source/PurgeHour/Private/System/EnemyAIController.cpp`
+- 行为树任务：`Source/PurgeHour/Public/AI/BTTask_RandomLocation.h`，`Source/PurgeHour/Private/AI/BTTask_RandomLocation.cpp`，`Source/PurgeHour/Public/AI/BTTask_Attack.h`，`Source/PurgeHour/Private/AI/BTTask_Attack.cpp`
 - 构建依赖：`Source/PurgeHour/PurgeHour.Build.cs`
 
 ---

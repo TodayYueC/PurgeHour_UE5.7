@@ -11,7 +11,6 @@
 // #include "Kismet/GameplayStatics.h"     // 已迁移到GAS
 // #include "Sound/SoundCue.h"             // 已迁移到GAS
 // #include "Subsystem/DelegatesSubsystem.h" // 武器名广播已迁移到 PlayerState
-#include "System/HeroPlayerState.h"
 
 // Sets default values
 AWeaponBase::AWeaponBase()
@@ -27,6 +26,12 @@ AWeaponBase::AWeaponBase()
 	WeaponSkeletalMesh->SetupAttachment(Root);
 	PickupCollision = CreateDefaultSubobject<USphereComponent>(TEXT("PickupCollision"));
 	PickupCollision->SetupAttachment(Root);
+	PickupCollision->SetSphereRadius(100.f);
+	PickupCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	PickupCollision->SetCollisionObjectType(ECC_WorldDynamic);
+	PickupCollision->SetCollisionResponseToAllChannels(ECR_Ignore);
+	PickupCollision->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+	PickupCollision->SetGenerateOverlapEvents(true);
 	
 	PickupCollision->OnComponentBeginOverlap.AddDynamic(this, &AWeaponBase::OnPickupBeginOverlap);
 }
@@ -35,6 +40,17 @@ AWeaponBase::AWeaponBase()
 void AWeaponBase::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// 防止蓝图子类或关卡实例覆盖掉碰撞默认值，运行时再强制一次。
+	if (PickupCollision)
+	{
+		PickupCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+		PickupCollision->SetCollisionObjectType(ECC_WorldDynamic);
+		PickupCollision->SetCollisionResponseToAllChannels(ECR_Ignore);
+		PickupCollision->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+		PickupCollision->SetGenerateOverlapEvents(true);
+	}
+
 	// InitWeaponData(); // 旧初始化逻辑已全部迁移，注释保留
 }
 
@@ -45,15 +61,8 @@ void AWeaponBase::OnPickupBeginOverlap(UPrimitiveComponent* OverlappedComp, AAct
 	{
 		WeaponOwner = Cast<AHero>(OtherActor);
 		if (WeaponOwner){
-			//先直接捡，以后改进背包系统
+			// 仅负责拾取，UI 由 Hero 根据当前手持状态统一刷新
 			WeaponOwner->PickUpWeapon(this);
-
-			// 通过 PlayerState 广播武器名和弹药数量到 UI
-			if (AHeroPlayerState* PS = WeaponOwner->GetPlayerState<AHeroPlayerState>())
-			{
-				PS->BroadcastWeaponName(WeaponDataAsset->WeaponDisplayName);
-				PS->BroadcastAmmo();
-			}
 			// 子弹UI已迁移到GAS属性集广播，注释保留
 			// InitBulletNumUI();
 			

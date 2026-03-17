@@ -6,6 +6,8 @@
 #include "Components/ProgressBar.h"
 #include "System/HeroPlayerState.h"
 #include "AbilitySystem/HeroAttributeSet.h"
+#include "Characters/Hero/Hero.h"
+#include "PureData/HeroState.h"
 #include "GameFramework/PlayerController.h"
 
 void UFightWidget::NativeConstruct()
@@ -32,21 +34,43 @@ void UFightWidget::NativeConstruct()
 			}
 		}
 	}
+
+	RefreshAmmoVisibility();
 }
 
 void UFightWidget::UpdateWeaponName(const FText& NewWeaponName)
 {
 	WeaponName->SetText(NewWeaponName);
+	RefreshAmmoVisibility();
 }
 
 void UFightWidget::UpdateCurrentBullets(int32 NewBulletNum)
 {
 	CurrentBullets->SetText(FText::AsNumber(NewBulletNum));
+	RefreshAmmoVisibility();
 }
 
 void UFightWidget::UpdateReserveAmmo(int32 NewReserveAmmo)
 {
 	AllBullets->SetText(FText::AsNumber(NewReserveAmmo));
+	RefreshAmmoVisibility();
+}
+
+void UFightWidget::RefreshAmmoVisibility()
+{
+	AHero* Hero = GetOwningPlayerPawn<AHero>();
+	const bool bHideAmmo = !Hero || Hero->GetCurrentHeroState() != EHeroState::HoldingWeapon;
+	const ESlateVisibility AmmoVisibility = bHideAmmo ? ESlateVisibility::Collapsed : ESlateVisibility::Visible;
+
+	if (CurrentBullets)
+	{
+		CurrentBullets->SetVisibility(AmmoVisibility);
+	}
+
+	if (AllBullets)
+	{
+		AllBullets->SetVisibility(AmmoVisibility);
+	}
 }
 
 void UFightWidget::UpdateHealth(float NewHealth)

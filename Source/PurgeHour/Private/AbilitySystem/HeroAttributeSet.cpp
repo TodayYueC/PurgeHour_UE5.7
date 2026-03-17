@@ -44,6 +44,7 @@ void UHeroAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallba
 		if (GetHealth() <= 0.f)
 		{
 			// 角色死亡逻辑
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Hero is Dead!"));
 		}
 	}
 	
